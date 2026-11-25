@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+# claudeos-nautilus postinst. The package only ships two data files, so there is nothing to
+# configure; Files (Nautilus) loads extensions at startup, hence the hint. Always succeeds.
+set -euo pipefail
+
+if [ "${1:-}" = "configure" ]; then
+    echo "claudeos-nautilus: 'Ask Claude' appears in Files after it restarts (nautilus -q, or log out and in)."
+fi
+
+exit 0

@@ -1,0 +1,6 @@
+PKG_NAME="claudeos-nautilus"
+PKG_DESCRIPTION="ClaudeOS 'Ask Claude' action for GNOME Files (Nautilus): right-click files or folders to attach them to the Claude side panel"
+PKG_DEPENDS="python3-nautilus, claudeos-side-panel"
+PKG_RECOMMENDS="claudeos-theme, libnotify-bin"
+PKG_ARCH="all"
+PKG_SECTION="gnome"

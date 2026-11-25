@@ -1,0 +1,42 @@
+# Archive packages installed into the ClaudeOS live/installed root filesystem in addition to the
+# meta package `claudeos-desktop` (which pulls the module packages built by build-debs.sh).
+# One package per line; `#` starts a comment. nodejs/npm are handled specially: if the archive's
+# nodejs candidate is older than NODE_MIN_MAJOR (build.conf) they are replaced by `claudeos-nodejs`.
+
+# Installer
+calamares
+
+# Claude Code runtime
+nodejs
+npm
+
+# Python bits for the Nautilus extension and the MCP server venv
+python3-nautilus
+python3-venv
+
+# Computer control (Wayland: ydotool + gnome-screenshot; XWayland: xdotool/xclip)
+ydotool
+xdotool
+grim
+wl-clipboard
+xclip
+gnome-screenshot
+wmctrl
+x11-utils
+x11-xserver-utils
+
+# Desktop helpers
+librsvg2-bin
+libnotify-bin
+xdg-utils
+jq
+
+# Fonts used by the panel and theme
+fonts-inter
+fonts-jetbrains-mono
+
+# Electron runtime libraries (side panel)
+libnss3
+libxss1
+libasound2t64
+libgtk-3-0t64

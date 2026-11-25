@@ -1,0 +1,16 @@
+[Desktop Entry]
+Type=Application
+Version=1.0
+Name=Ask Claude
+GenericName=Claude side panel
+Comment=Open the Claude side panel with the selected items attached
+Keywords=Claude;AI;Assistant;Attach;
+# ARCHITECTURE C2: list-form exec, no shell: claudeos-panel attach -- <absolute paths>
+Exec=claudeos-panel attach -- %F
+TryExec=claudeos-panel
+Icon=claudeos-panel
+Terminal=false
+NoDisplay=false
+StartupNotify=false
+Categories=Utility;
+MimeType=inode/directory;application/octet-stream;text/*;image/*;application/pdf;application/zip;application/json;application/x-shellscript;video/*;audio/*;

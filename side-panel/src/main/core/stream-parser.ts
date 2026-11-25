@@ -243,6 +243,7 @@ export class StreamTranslator {
       case 'message_start': {
         const message = isObj(event.message) ? event.message : {};
         const messageId = str(message.id) ?? this.newLocalId();
+        this.current = null; // a previous message that never got message_stop is closed below
         this.closeOpen(out, messageId);
         this.current = { messageId, tools: new Map() };
         this.streamedMessageIds.add(messageId);
