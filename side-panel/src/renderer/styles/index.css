@@ -1,0 +1,11 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --c-bg: 245 244 239; --c-surface: 255 255 255; --c-line: 230 228 221; --c-accent: 217 119 87; --c-ink: 31 30 29; --c-muted: 111 109 102;
+}
+[data-theme='dark'] {
+  --c-bg: 38 38 36; --c-surface: 30 30 28; --c-line: 56 56 53; --c-accent: 217 119 87; --c-ink: 236 234 227; --c-muted: 165 163 155;
+}
+body { @apply bg-bg text-ink; margin: 0; }

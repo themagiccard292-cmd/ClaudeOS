@@ -1,0 +1,12 @@
+d41d8cd98f00b204e9800998ecf8427e  ./.disk/base_installable
+7a407c89895b2a04b47cd33309cdb1cb  ./.disk/casper-uuid-generic
+728cb968a88534e0c50a9d99621f13eb  ./.disk/cd_type
+427fc8b54360616587668067b8870042  ./.disk/info
+211a377300f24895b42f5ce384344a0c  ./EFI/boot/bootx64.efi
+2bd267fb12bd3b0fe26a9dfb4290868d  ./EFI/boot/grubx64.efi
+9f09ebdacbdc7c46269f99c7754bbfd3  ./EFI/boot/mmx64.efi
+09bb8a8ed60e577b2f8ed581bb0c2014  ./boot/grub/fonts/unicode.pf2
+97a2623ea9e9c7df01c4fe36939ab14d  ./boot/grub/grub.cfg
+2463ca5a809e647ace7915bb7470a93b  ./boot/grub/i386-pc/915resolution.mod
+50b032b805b991526107adaaf44ecc92  ./boot/grub/i386-pc/acpi.mod
+af25a2c53266d1ae4009a8ef572827d8  ./boot/grub/i386-pc/adler32.mod

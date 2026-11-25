@@ -1,0 +1,22 @@
+node_modules/
+dist/
+build/
+out/
+*.log
+__pycache__/
+*.pyc
+.pytest_cache/
+.ruff_cache/
+.venv/
+venv/
+*.egg-info/
+# ISO build products
+/work/
+/iso-work/
+/cache/
+*.iso
+*.iso.part-*
+*.deb
+/iso-builder/out/
+.DS_Store
+dist-package/
