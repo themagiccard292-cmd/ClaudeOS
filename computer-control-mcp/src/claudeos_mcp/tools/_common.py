@@ -5,20 +5,19 @@ from __future__ import annotations
 import functools
 import logging
 from collections.abc import Callable
-from typing import Any, TypeVar
+from typing import Any
 
 from ..backends.files import FileToolError
 from ..gate import GateResult
 from ..keys import KeyParseError
 
 log = logging.getLogger("claudeos_mcp")
-F = TypeVar("F", bound=Callable[..., Any])
 
 # Errors whose message is already written for the model.
 _EXPECTED = (ValueError, LookupError, RuntimeError, FileToolError, KeyParseError, OSError)
 
 
-def safe_tool(fn: F) -> F:
+def safe_tool[F: Callable[..., Any]](fn: F) -> F:
     """Never raise to the client: turn any exception into an actionable text result."""
 
     @functools.wraps(fn)

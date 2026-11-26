@@ -11,7 +11,13 @@ from dataclasses import dataclass, field
 
 from .approval import ApprovalClient
 from .backends.clipboard import ClipboardBackend
-from .backends.input_ import InputBackend, InputError, XdotoolBackend, YdotoolBackend, select_backend
+from .backends.input_ import (
+    InputBackend,
+    InputError,
+    XdotoolBackend,
+    YdotoolBackend,
+    select_backend,
+)
 from .backends.portal import portal_screenshot
 from .backends.screen import ScreenBackend
 from .backends.system import SystemBackend
