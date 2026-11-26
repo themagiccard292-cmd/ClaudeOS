@@ -6,6 +6,7 @@ import json
 import os
 import shutil
 import socket
+import sys
 
 import pytest
 from conftest import BASE, LIB, fake_claude, run, write_exe
@@ -211,7 +212,7 @@ def test_session_init_replaces_stale_and_never_fails(tmp_path, clean_env, fakebi
     cj.write_text("not json")
     assert run([LIB / "claudeos-session-init"], env).returncode == 0
     no_path = dict(env, PATH="/nonexistent")  # no claude, no systemctl
-    assert run(["python3", LIB / "claudeos-session-init"], no_path).returncode == 0
+    assert run([sys.executable, LIB / "claudeos-session-init"], no_path).returncode == 0
 
 
 # ---- installer / update / login --------------------------------------------------------------

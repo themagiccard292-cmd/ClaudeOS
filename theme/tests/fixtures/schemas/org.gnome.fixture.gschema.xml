@@ -1,0 +1,25 @@
+<!-- Trimmed copies of the GNOME 50 (gsettings-desktop-schemas 50.0, gnome-shell 50.1) key
+     definitions the override touches: same ids, key names, types and enums. -->
+<schemalist>
+  <schema id="org.gnome.desktop.interface" path="/org/gnome/desktop/interface/">
+    <key name="accent-color" enum="org.gnome.desktop.GDesktopAccentColor"><default>'blue'</default></key>
+    <key name="color-scheme" enum="org.gnome.desktop.GDesktopColorScheme"><default>'default'</default></key>
+    <key name="monospace-font-name" type="s"><default>'Monospace 11'</default></key>
+  </schema>
+  <schema id="org.gnome.desktop.background" path="/org/gnome/desktop/background/">
+    <key name="picture-options" enum="org.gnome.desktop.GDesktopBackgroundStyle"><default>'zoom'</default></key>
+    <key name="picture-uri" type="s"><default>'file:///usr/share/backgrounds/gnome/adwaita-l.jxl'</default></key>
+    <key name="picture-uri-dark" type="s"><default>'file:///usr/share/backgrounds/gnome/adwaita-d.jxl'</default></key>
+    <key name="primary-color" type="s"><default>'#023c88'</default></key>
+    <key name="secondary-color" type="s"><default>'#5789ca'</default></key>
+  </schema>
+  <schema id="org.gnome.desktop.screensaver" path="/org/gnome/desktop/screensaver/">
+    <key name="picture-options" enum="org.gnome.desktop.GDesktopBackgroundStyle"><default>'zoom'</default></key>
+    <key name="picture-uri" type="s"><default>''</default></key>
+    <key name="primary-color" type="s"><default>'#023c88'</default></key>
+    <key name="secondary-color" type="s"><default>'#5789ca'</default></key>
+  </schema>
+  <schema id="org.gnome.shell" path="/org/gnome/shell/">
+    <key name="favorite-apps" type="as"><default>['org.gnome.Nautilus.desktop']</default></key>
+  </schema>
+</schemalist>
