@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import os
 import subprocess
 import sys
 from pathlib import Path
@@ -23,10 +24,8 @@ def sh(tmp_path):
     """sh(script, stdin=None, env=None) -> CompletedProcess; all libs are sourced, WORK_DIR=tmp/work."""
 
     def run(script: str, stdin: str | None = None, env: dict | None = None):
-        prelude = "set -euo pipefail\nISO_BUILDER_DIR={0}\nWORK_DIR={1}\n".format(ISO_BUILDER, tmp_path / "work")
+        prelude = f"set -euo pipefail\nISO_BUILDER_DIR={ISO_BUILDER}\nWORK_DIR={tmp_path / 'work'}\n"
         prelude += "".join(f"source {ISO_BUILDER / lib}\n" for lib in LIBS)
-        import os
-
         return subprocess.run(["bash", "-c", prelude + script], input=stdin, capture_output=True, text=True,
                               env={**os.environ, **(env or {})}, check=False)
 

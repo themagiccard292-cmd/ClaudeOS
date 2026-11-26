@@ -1,0 +1,14 @@
+#!/usr/bin/env bash
+# Launcher for the claudeos-desktop MCP server (stdio). Prefers the packaged venv, falls back to
+# the system python3 with the installed sources (needs `mcp` and `pillow` importable).
+set -euo pipefail
+
+VENV_PYTHON="${CLAUDEOS_VENV:-/opt/claudeos/venv}/bin/python"
+SRC_DIR="${CLAUDEOS_MCP_SRC:-/usr/lib/claudeos/computer-control/src}"
+
+if [ -x "$VENV_PYTHON" ]; then
+    export PYTHONPATH="$SRC_DIR${PYTHONPATH:+:$PYTHONPATH}"
+    exec "$VENV_PYTHON" -m claudeos_mcp "$@"
+fi
+export PYTHONPATH="$SRC_DIR${PYTHONPATH:+:$PYTHONPATH}"
+exec python3 -m claudeos_mcp "$@"

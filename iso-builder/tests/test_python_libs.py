@@ -2,11 +2,10 @@ import os
 import subprocess
 import sys
 
-import pytest
-import yaml
-
 import flatten_layers
+import pytest
 import seed_edit
+import yaml
 from conftest import REPO, UBUNTU
 
 

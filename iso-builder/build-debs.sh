@@ -89,12 +89,19 @@ STAGE_ROOT=""
 cleanup() { if [[ -n "$STAGE_ROOT" ]]; then rm -rf -- "$STAGE_ROOT"; fi; }
 trap cleanup EXIT
 
-# build_module MODULE [EXTRA_DEPENDS]
+# Packages the meta package only Recommends: the installer package pulls in calamares, which the
+# installer purges from the installed system - a hard Depends would take claudeos-desktop with it.
+META_SOFT_PACKAGES=" claudeos-calamares "
+
+# build_module MODULE [EXTRA_DEPENDS [EXTRA_RECOMMENDS]]
 build_module() {
-  local module="$1" extra="${2:-}" stage s
+  local module="$1" extra="${2:-}" extra_rec="${3:-}" stage s
   load_meta "$module"
   if [[ -n "$extra" ]]; then
     PKG_DEPENDS="${extra}${PKG_DEPENDS:+, $PKG_DEPENDS}"
+  fi
+  if [[ -n "$extra_rec" ]]; then
+    PKG_RECOMMENDS="${extra_rec}${PKG_RECOMMENDS:+, $PKG_RECOMMENDS}"
   fi
   stage="$STAGE_ROOT/$module"
   mkdir -p "$stage"
@@ -128,11 +135,15 @@ main() {
   umask 022
   BUILT=()
 
-  local modules=() m names=()
+  local modules=() m names=() soft=()
   mapfile -t modules < <(discover_modules)
   for m in "${modules[@]}"; do
     load_meta "$m"
-    names+=("${PKG_NAME} (= ${PKG_VERSION_ALL})")
+    if [[ "$META_SOFT_PACKAGES" == *" ${PKG_NAME} "* ]]; then
+      soft+=("${PKG_NAME} (= ${PKG_VERSION_ALL})")
+    else
+      names+=("${PKG_NAME} (= ${PKG_VERSION_ALL})")
+    fi
   done
   for m in "${modules[@]}"; do
     wanted "$m" && build_module "$m"
@@ -144,7 +155,9 @@ main() {
     fi
     local joined=""
     for m in "${names[@]}"; do joined+="${joined:+, }$m"; done
-    build_module "$META_MODULE" "$joined"
+    local joined_soft=""
+    for m in "${soft[@]}"; do joined_soft+="${joined_soft:+, }$m"; done
+    build_module "$META_MODULE" "$joined" "$joined_soft"
   fi
   ((${#BUILT[@]})) || die "nothing was built (check --only / package.meta files)"
   bash "$ISO_BUILDER_DIR/lib/repo-index.sh" "$OUT"

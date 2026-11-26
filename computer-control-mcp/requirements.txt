@@ -1,0 +1,3 @@
+# Runtime dependencies of the claudeos-desktop MCP server (mcp 2.x renamed FastMCP; stay on 1.x).
+mcp>=1.12,<2
+pillow>=10

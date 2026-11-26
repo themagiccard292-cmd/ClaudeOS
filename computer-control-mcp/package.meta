@@ -1,0 +1,6 @@
+PKG_NAME="claudeos-computer-control"
+PKG_DESCRIPTION="ClaudeOS computer-control MCP server (claudeos-desktop): screenshots, mouse, keyboard, windows, files and system tools behind a fail-closed safety classifier"
+PKG_DEPENDS="python3, python3-venv, python3-pil, ydotool, xdotool, wl-clipboard, xclip, gnome-screenshot, libglib2.0-bin, libnotify-bin, xdg-utils"
+PKG_RECOMMENDS="wmctrl, grim, x11-xserver-utils"
+PKG_ARCH="all"
+PKG_SECTION="utils"
