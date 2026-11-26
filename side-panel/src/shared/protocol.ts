@@ -13,7 +13,8 @@
 export type EffortLevel = 'low' | 'medium' | 'high' | 'xhigh' | 'max';
 
 /** Permission modes accepted by `claude --permission-mode` (2.1.x). */
-export type PermissionMode = 'acceptEdits' | 'manual' | 'plan' | 'auto' | 'dontAsk' | 'bypassPermissions';
+// 'bypassPermissions' is deliberately absent: managed settings disable it (disableBypassPermissionsMode) and claude would refuse to start.
+export type PermissionMode = 'acceptEdits' | 'manual' | 'plan' | 'auto' | 'dontAsk';
 
 export interface ModelOption {
   /** Alias passed to `claude --model`. */

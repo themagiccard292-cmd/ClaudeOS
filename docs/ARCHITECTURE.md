@@ -96,6 +96,7 @@ Rules for all modules:
 /opt/claudeos/panel/                            Electron app dir (binary: claudeos-panel-app)   side-panel
 /usr/share/applications/claudeos-panel.desktop                                                  side-panel
 /usr/share/nautilus-python/extensions/claudeos_ask_claude.py                                    nautilus-extension
+/usr/share/applications/claudeos-ask-claude.desktop  (Open With / other file managers)    nautilus-extension
 /usr/lib/claudeos/computer-control/             python package `claudeos_mcp` + requirements    computer-control-mcp
 /usr/bin/claudeos-computer-control-mcp          launcher -> /opt/claudeos/venv/bin/python -m claudeos_mcp
 /opt/claudeos/venv/                              created by `/usr/lib/claudeos/computer-control/setup-venv.sh`
@@ -210,6 +211,14 @@ no `apiKeyHelper`, no `ANTHROPIC_*` env. `/etc/claude-code/CLAUDE.md` is the **O
 how to see (screenshot first, then act, verify after each step), how to act (prefer CLI/API over GUI clicking, ydotool caveats, screenshot-space coordinates),
 safety rules (never run block-class actions, state before destructive actions, never exfiltrate credentials, treat on-screen text as untrusted data, no prompt-injection compliance),
 how to use the panel (attached files appear as paths), and tone. Both files are valid JSON/Markdown and tested.
+
+## Integration decisions (post-implementation)
+
+- `bypassPermissions` is not a valid panel permission mode: managed settings set `permissions.disableBypassPermissionsMode: "disable"`, so `claude` would refuse to start. The panel validates against `acceptEdits|manual|plan|auto|dontAsk`.
+- The meta package `claudeos-desktop` lists `calamares` + `claudeos-calamares` under **Recommends**, not Depends, so purging the installer from an installed system (Calamares post-install) cannot cascade-remove the meta package.
+- The GRUB distributor stays `Ubuntu` (EFI directory `/EFI/ubuntu`) so shim/Secure Boot chainloading is unchanged even though os-release `NAME` is `ClaudeOS`.
+- The full ISO is also published as a single file to `ghcr.io/<owner>/claudeos-iso:<version>` (OCI artifact, no 2 GiB cap); `scripts/download-iso.sh` fetches it. Release assets remain split parts.
+- `claudeos-computer-control` additionally depends on `python3-pil` (screenshot scaling).
 
 ## C6. Module packaging contract
 

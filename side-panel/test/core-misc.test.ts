@@ -107,6 +107,16 @@ describe('stores', () => {
   });
 });
 
+describe('permission modes', () => {
+  it('never accepts bypassPermissions (managed settings disable it; claude would refuse to start)', async () => {
+    const s = new SettingsStore(join(tmp, 'bypass'));
+    const before = await s.get();
+    const after = await s.set({ permissionMode: 'bypassPermissions' }).catch(() => before);
+    expect(after.permissionMode).toBe(before.permissionMode);
+    expect(after.permissionMode).not.toBe('bypassPermissions');
+  });
+});
+
 describe('files', () => {
   it('describes files, dirs, images and missing paths; rejects relative; accepts file:// and dedupes', async () => {
     const f = join(tmp, 'a.txt');

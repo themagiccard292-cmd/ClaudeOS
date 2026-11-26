@@ -36,7 +36,7 @@ export const CONVERSATION_ID_RE = /^[A-Za-z0-9_-]{1,64}$/;
 // Values that end up in argv must never start with '-' so they cannot be mistaken for flags.
 const SESSION_ID_RE = /^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$/;
 const MODEL_RE = /^[A-Za-z0-9][A-Za-z0-9._[\]-]{0,99}$/;
-const PERMISSION_MODES: readonly PermissionMode[] = ['acceptEdits', 'manual', 'plan', 'auto', 'dontAsk', 'bypassPermissions'];
+const PERMISSION_MODES: readonly PermissionMode[] = ['acceptEdits', 'manual', 'plan', 'auto', 'dontAsk'];
 const MAX_TEXT_CHARS = 1_000_000;
 const MAX_ATTACHMENTS = 100;
 const STDERR_TAIL_LINES = 20;

@@ -40,7 +40,7 @@ export async function atomicWrite(file: string, data: string): Promise<void> {
   }
 }
 
-const PERMISSION_MODES: readonly PermissionMode[] = ['acceptEdits', 'manual', 'plan', 'auto', 'dontAsk', 'bypassPermissions'];
+const PERMISSION_MODES: readonly PermissionMode[] = ['acceptEdits', 'manual', 'plan', 'auto', 'dontAsk'];
 const THEMES: readonly ThemePreference[] = ['system', 'light', 'dark'];
 const MODEL_ALIAS_RE = /^[A-Za-z0-9][A-Za-z0-9._[\]-]{0,99}$/;
 
