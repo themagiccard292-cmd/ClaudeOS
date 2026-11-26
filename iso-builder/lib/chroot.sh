@@ -70,6 +70,49 @@ ensure_universe_deb822() {
   return "$rc"
 }
 
+# strip_cdrom_sources FILE: remove apt sources that point at the install disc (cdrom: / file:/cdrom). The
+# stock image ships such an entry (cdrom.sources); during the build /cdrom does not exist, so `apt-get update`
+# would die with "repository 'file:/cdrom ... Release' does not have a Release file". Handles deb822
+# (*.sources: drops whole stanzas) and one-line (*.list / sources.list) files. Prints "changed" or "unchanged".
+strip_cdrom_sources() {
+  local file="$1" tmp
+  tmp="$(mktemp)"
+  case "$file" in
+    *.sources)
+      awk 'BEGIN { RS = ""; ORS = "\n\n" } /(^|\n)URIs:[^\n]*(cdrom:|file:\/+cdrom)/ { next } { print }' "$file" >"$tmp"
+      ;;
+    *)
+      grep -Ev '^[[:space:]]*deb(-src)?[[:space:]].*(cdrom:|file:/+cdrom)' "$file" >"$tmp" || true
+      ;;
+  esac
+  if cmp -s "$file" "$tmp"; then
+    rm -f "$tmp"
+    echo unchanged
+  else
+    cat "$tmp" >"$file"
+    rm -f "$tmp"
+    echo changed
+  fi
+}
+
+# disable_cdrom_sources: apply strip_cdrom_sources to every apt source file of the rootfs.
+disable_cdrom_sources() {
+  local root f
+  root="$(rootfs_dir)"
+  if is_dry_run; then
+    dry_note "remove cdrom: / file:/cdrom apt sources from $root/etc/apt (sources.list, sources.list.d/*)"
+    return 0
+  fi
+  for f in "$root/etc/apt/sources.list" "$root"/etc/apt/sources.list.d/*.sources "$root"/etc/apt/sources.list.d/*.list; do
+    [[ -f "$f" ]] || continue
+    if [[ "$(strip_cdrom_sources "$f")" == changed ]]; then
+      log_info "removed cdrom source(s) from ${f#"$root"/}"
+      # A file left with no stanzas/lines is dead weight (and confuses apt): drop it.
+      [[ -s "$f" ]] && grep -q '[^[:space:]]' "$f" || rm -f "$f"
+    fi
+  done
+}
+
 # write_default_ubuntu_sources FILE CODENAME: used only when the rootfs has no ubuntu.sources at all.
 write_default_ubuntu_sources() {
   cat >"$1" <<EOF
@@ -406,6 +449,7 @@ stage_customize() {
   chroot_setup_resolv
   chroot_block_services
   hold_kernel_packages
+  disable_cdrom_sources
   enable_universe
   add_localrepo_source
   in_chroot "${APT_GET[@]}" update

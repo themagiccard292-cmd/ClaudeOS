@@ -124,3 +124,38 @@ def test_boot_report_parser(sh):
         r = sh(f"verify_boot_report < {d / ('report-' + name + '.txt')}")
         assert r.returncode == rc, (name, r.stdout)
 
+
+
+def test_strip_cdrom_sources_deb822_drops_only_cdrom_stanzas(sh, tmp_path):
+    f = tmp_path / "mixed.sources"
+    f.write_text(
+        "Types: deb\nURIs: file:/cdrom\nSuites: resolute\nComponents: main restricted\n\n"
+        "Types: deb\nURIs: http://archive.ubuntu.com/ubuntu\nSuites: resolute\nComponents: main universe\n"
+    )
+    r = sh(f'strip_cdrom_sources "{f}"')
+    assert r.returncode == 0, r.stderr
+    assert r.stdout.strip() == "changed"
+    out = f.read_text()
+    assert "cdrom" not in out
+    assert "archive.ubuntu.com" in out and "Components: main universe" in out
+    assert sh(f'strip_cdrom_sources "{f}"').stdout.strip() == "unchanged"
+
+
+def test_strip_cdrom_sources_one_line_list(sh, tmp_path):
+    f = tmp_path / "sources.list"
+    f.write_text("deb cdrom:[Ubuntu 26.04.1]/ resolute main\ndeb http://archive.ubuntu.com/ubuntu resolute main\n# deb cdrom comment\n")
+    r = sh(f'strip_cdrom_sources "{f}"')
+    assert r.stdout.strip() == "changed"
+    assert f.read_text() == "deb http://archive.ubuntu.com/ubuntu resolute main\n# deb cdrom comment\n"
+
+
+def test_disable_cdrom_sources_removes_fully_cdrom_files(sh, tmp_path):
+    root = tmp_path / "work" / "rootfs"
+    d = root / "etc/apt/sources.list.d"
+    d.mkdir(parents=True)
+    (d / "cdrom.sources").write_text("Types: deb\nURIs: file:/cdrom\nSuites: resolute\nComponents: main\n")
+    (d / "ubuntu.sources").write_text("Types: deb\nURIs: http://archive.ubuntu.com/ubuntu\nSuites: resolute\nComponents: main\n")
+    r = sh("disable_cdrom_sources")
+    assert r.returncode == 0, r.stderr + r.stdout
+    assert not (d / "cdrom.sources").exists()
+    assert (d / "ubuntu.sources").exists()
