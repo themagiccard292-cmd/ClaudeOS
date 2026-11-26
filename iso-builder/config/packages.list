@@ -6,6 +6,12 @@
 # Installer
 calamares
 
+# Boot loaders for the installed system (the installer copies them from the squashfs, offline)
+grub-pc-bin
+grub-efi-amd64-signed
+shim-signed
+efibootmgr
+
 # Claude Code runtime
 nodejs
 npm

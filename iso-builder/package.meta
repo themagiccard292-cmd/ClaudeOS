@@ -6,7 +6,9 @@ Installs the complete ClaudeOS experience on Ubuntu: the Claude Code CLI
 integration, the docked Claude side panel, desktop computer-control tools,
 the Ask Claude Nautilus action, the Calamares installer configuration and the
 warm ClaudeOS theme."
-PKG_DEPENDS="nodejs (>= 22), npm, calamares, python3-nautilus, python3-venv, ydotool, xdotool, grim, wl-clipboard, xclip, gnome-screenshot, x11-xserver-utils, librsvg2-bin, libnotify-bin, xdg-utils, jq"
-PKG_RECOMMENDS="fonts-inter, fonts-jetbrains-mono"
+PKG_DEPENDS="nodejs (>= 22), npm, python3-nautilus, python3-venv, ydotool, xdotool, grim, wl-clipboard, xclip, gnome-screenshot, x11-xserver-utils, librsvg2-bin, libnotify-bin, xdg-utils, jq"
+# calamares is only Recommended: the installer purges it from the installed system, which must not
+# remove this meta package (and with it the whole ClaudeOS stack).
+PKG_RECOMMENDS="calamares, fonts-inter, fonts-jetbrains-mono"
 PKG_ARCH="all"
 PKG_SECTION="metapackages"

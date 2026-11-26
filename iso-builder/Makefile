@@ -22,7 +22,7 @@ bootstrap:
 	$(VENV)/bin/pip install --quiet -r requirements-dev.txt
 
 lint:
-	shellcheck -x $(SHELL_SOURCES)
+	shellcheck -x --source-path=$(REPO_ROOT) $(SHELL_SOURCES)
 	$(RUFF) check --config $(REPO_ROOT)/ruff.toml $(PY_SOURCES)
 	yamllint -c $(REPO_ROOT)/.yamllint $(WORKFLOWS)
 	$(PYTHON) -c 'import sys, yaml; [yaml.safe_load(open(f)) for f in sys.argv[1:]]' $(WORKFLOWS)

@@ -55,7 +55,7 @@ done
 
 section "shellcheck (${#shell[@]} files)"
 if ((${#shell[@]})); then
-  shellcheck -x "${shell[@]}" || failures+=(shellcheck)
+  shellcheck -x --source-path="$ROOT" "${shell[@]}" || failures+=(shellcheck)
 fi
 
 section "yamllint (${#yaml[@]} files)"

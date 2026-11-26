@@ -123,7 +123,9 @@ brand_rootfs() {
   printf '%s %s \\n \\l\n\n' "${PRODUCT_NAME:-ClaudeOS}" "$version" >"$root/etc/issue"
   printf '%s %s\n' "${PRODUCT_NAME:-ClaudeOS}" "$version" >"$root/etc/issue.net"
   mkdir -p "$root/etc/default/grub.d"
-  printf '# Installed by the ClaudeOS ISO builder.\nGRUB_DISTRIBUTOR="%s"\n' "${PRODUCT_NAME:-ClaudeOS}" \
+  # grub-install derives the EFI directory (/EFI/<id>) from GRUB_DISTRIBUTOR. Signed GRUB/shim only
+  # chainload from /EFI/ubuntu, so the id must stay "ubuntu" even though os-release says ClaudeOS.
+  printf '# Installed by the ClaudeOS ISO builder: keep the EFI directory id "ubuntu" (Secure Boot).\nGRUB_DISTRIBUTOR="Ubuntu"\n' \
     >"$root/etc/default/grub.d/50-claudeos-distributor.cfg"
 }
 
