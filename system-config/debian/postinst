@@ -1,0 +1,31 @@
+#!/bin/sh
+# claudeos-core postinst: best effort, idempotent, always exits 0.
+set -u
+
+in_chroot() { command -v ischroot >/dev/null 2>&1 && ischroot; }
+
+[ "${1:-configure}" = "configure" ] || exit 0
+
+if command -v dconf >/dev/null 2>&1; then
+  dconf update || true
+fi
+
+if command -v systemctl >/dev/null 2>&1; then
+  systemctl --global enable ydotoold.service >/dev/null 2>&1 || true
+  # The ydotool package's own unit uses the same socket; ydotoold.service replaces it.
+  systemctl --global mask ydotool.service >/dev/null 2>&1 || true
+fi
+
+if ! in_chroot; then
+  if command -v udevadm >/dev/null 2>&1; then
+    udevadm control --reload >/dev/null 2>&1 || true
+    udevadm trigger --name-match=uinput >/dev/null 2>&1 || true
+  fi
+  modprobe uinput >/dev/null 2>&1 || true
+fi
+
+if [ -x /usr/lib/claudeos/apply-branding.sh ]; then
+  /usr/lib/claudeos/apply-branding.sh || true
+fi
+
+exit 0

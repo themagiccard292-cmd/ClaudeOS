@@ -23,7 +23,8 @@ xorriso_repack_args() {
     args+=(-map "$tree/$f" "/$f")
   done
   # Re-apply the default permissions of the original image for the new files.
-  args+=(-chmod_r a+rX,go-w /casper --)
+  local mode="a+rX,go-w"
+  args+=(-chmod_r "$mode" /casper --)
   args+=(-commit)
   printf '%s\0' "${args[@]}"
 }

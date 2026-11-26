@@ -48,7 +48,7 @@ generate_md5sum() {
   # The temporary file lives next to (not inside) the tree so it is not listed itself.
   tmp="$(mktemp -p "$(dirname "$tree")" md5sum.XXXXXX)"
   (
-    cd "$tree"
+    cd "$tree" || exit 1
     find . -type f ! -path ./md5sum.txt ! -path ./boot.catalog -print0 | LC_ALL=C sort -z | xargs -0 -r md5sum
   ) >"$tmp"
   chmod 0644 "$tmp"

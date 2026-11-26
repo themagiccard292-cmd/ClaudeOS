@@ -1,0 +1,16 @@
+#!/bin/sh
+# claudeos-core postrm: refresh caches after files are gone. Always exits 0.
+set -u
+
+case "${1:-}" in
+  remove | purge)
+    if command -v dconf >/dev/null 2>&1; then
+      dconf update || true
+    fi
+    if command -v udevadm >/dev/null 2>&1; then
+      udevadm control --reload >/dev/null 2>&1 || true
+    fi
+    ;;
+esac
+
+exit 0

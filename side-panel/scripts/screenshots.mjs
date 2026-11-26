@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+/* global document -- referenced only inside page.evaluate() callbacks, which run in the browser */
 /**
  * Visual verification: builds the renderer, serves dist/renderer on a free local port (the in-memory mock API is
  * used automatically because there is no Electron preload) and captures the key screens with Playwright/Chromium

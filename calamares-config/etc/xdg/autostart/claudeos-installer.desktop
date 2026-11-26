@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Name=ClaudeOS Installer
+Comment=Start the ClaudeOS installer in the live session
+Exec=/usr/lib/claudeos/calamares/launch-installer
+OnlyShowIn=GNOME;
+X-GNOME-Autostart-Delay=3
+NoDisplay=true
+Terminal=false

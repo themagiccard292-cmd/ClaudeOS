@@ -1,7 +1,7 @@
 # shellcheck shell=bash
 # Stage 1 (preflight) and stage 2 (download + verify).
 
-BUILD_TOOLS=(xorriso mksquashfs unsquashfs rsync gpg gpgv curl dpkg-deb dpkg-scanpackages gawk python3 sha256sum md5sum chroot mount umount mountpoint)
+BUILD_TOOLS=(xorriso mksquashfs unsquashfs rsync gpg gpgv curl dpkg-deb dpkg-scanpackages awk python3 sha256sum md5sum chroot mount umount mountpoint)
 INSTALL_HINT="sudo apt-get install xorriso squashfs-tools rsync gnupg curl dpkg-dev gawk"
 
 # free_gb DIR: free space (GiB, integer) of the filesystem holding DIR (or its nearest existing parent).

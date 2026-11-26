@@ -1,0 +1,54 @@
+# ClaudeOS GNOME defaults (package claudeos-theme).
+#
+# Why every key appears twice: Ubuntu's 10_ubuntu-settings.gschema.override sets
+# favorite-apps, picture-uri(-dark) and monospace-font-name in *session-specific* groups
+# ([schema:ubuntu]).  GLib applies a [schema:DESKTOP] override whenever $XDG_CURRENT_DESKTOP
+# contains DESKTOP, and it beats a plain [schema] group no matter which file defines it
+# (verified with glib-compile-schemas 2.80 + gsettings against the real GNOME 50 schemas).
+# Overrides are applied in file-name order, later wins, so "90_" sorts after Ubuntu's "10_"
+# files and our [schema:ubuntu] groups win over theirs.  The plain groups cover non-Ubuntu
+# sessions.  Compiled by postinst / the ISO chroot with glib-compile-schemas.
+#
+# dconf (/etc/dconf/db/*) and the user's own settings still take precedence over this file.
+
+[org.gnome.desktop.interface]
+accent-color='orange'
+color-scheme='default'
+monospace-font-name='JetBrains Mono 11'
+
+[org.gnome.desktop.interface:ubuntu]
+accent-color='orange'
+color-scheme='default'
+monospace-font-name='JetBrains Mono 11'
+
+[org.gnome.desktop.background]
+picture-uri='file:///usr/share/backgrounds/claudeos/claudeos-light.png'
+picture-uri-dark='file:///usr/share/backgrounds/claudeos/claudeos-dark.png'
+picture-options='zoom'
+primary-color='#F5F4EF'
+secondary-color='#F5F4EF'
+
+[org.gnome.desktop.background:ubuntu]
+picture-uri='file:///usr/share/backgrounds/claudeos/claudeos-light.png'
+picture-uri-dark='file:///usr/share/backgrounds/claudeos/claudeos-dark.png'
+picture-options='zoom'
+primary-color='#F5F4EF'
+secondary-color='#F5F4EF'
+
+[org.gnome.desktop.screensaver]
+picture-uri='file:///usr/share/backgrounds/claudeos/claudeos-light.png'
+picture-options='zoom'
+primary-color='#F5F4EF'
+secondary-color='#F5F4EF'
+
+[org.gnome.desktop.screensaver:ubuntu]
+picture-uri='file:///usr/share/backgrounds/claudeos/claudeos-light.png'
+picture-options='zoom'
+primary-color='#F5F4EF'
+secondary-color='#F5F4EF'
+
+[org.gnome.shell]
+favorite-apps=['claudeos-panel.desktop', 'org.gnome.Nautilus.desktop', 'firefox_firefox.desktop', 'org.gnome.Ptyxis.desktop', 'org.gnome.Settings.desktop']
+
+[org.gnome.shell:ubuntu]
+favorite-apps=['claudeos-panel.desktop', 'org.gnome.Nautilus.desktop', 'firefox_firefox.desktop', 'org.gnome.Ptyxis.desktop', 'org.gnome.Settings.desktop']

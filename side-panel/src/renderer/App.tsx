@@ -193,6 +193,7 @@ function Panel() {
   const drawerOpen = settings.historyOpen;
   const overlay = width < DRAWER_OVERLAY_BELOW;
   const toggleDrawer = () => void update({ historyOpen: !drawerOpen });
+  const closeDrawer = useCallback(() => void update({ historyOpen: false }), [update]);
   const signedIn = auth?.loggedIn === true && !snap.authRequired;
 
   const onSignedIn = useCallback(
@@ -253,14 +254,14 @@ function Panel() {
         now={now}
         onNewChat={() => {
           void newChat();
-          if (overlay) void update({ historyOpen: false });
+          if (overlay) closeDrawer();
         }}
         onSelect={(id) => {
           void store.select(id);
-          if (overlay) void update({ historyOpen: false });
+          if (overlay) closeDrawer();
         }}
         onDelete={(id) => void store.remove(id, settingsRef.current)}
-        onClose={() => void update({ historyOpen: false })}
+        onClose={closeDrawer}
       />
       <div className="relative flex min-w-0 flex-1 flex-col">
         <Header

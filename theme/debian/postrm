@@ -1,0 +1,16 @@
+#!/bin/sh
+# claudeos-theme postrm: the override file is gone, so recompile; refresh the icon cache.
+set -e
+
+case "$1" in
+  remove | purge | upgrade | disappear | abort-install | abort-upgrade)
+    if command -v glib-compile-schemas >/dev/null 2>&1; then
+      glib-compile-schemas /usr/share/glib-2.0/schemas >/dev/null 2>&1 || true
+    fi
+    if [ -d /usr/share/icons/hicolor ] && command -v gtk-update-icon-cache >/dev/null 2>&1; then
+      gtk-update-icon-cache -f -t /usr/share/icons/hicolor >/dev/null 2>&1 || true
+    fi
+    ;;
+esac
+
+exit 0

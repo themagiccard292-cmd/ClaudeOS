@@ -208,6 +208,7 @@ hold_kernel_packages() {
     in_chroot apt-mark hold '<linux-* grub* shim* packages>'
     return 0
   fi
+  # shellcheck disable=SC2016 # dpkg-query format fields, not shell variables
   in_chroot dpkg-query -W -f='${Package} ${db:Status-Abbrev}\n' | select_hold_packages >"$state/held-packages"
   [[ -s "$state/held-packages" ]] || die "found no linux-*/grub*/shim* packages to hold - unexpected rootfs"
   mapfile -t held <"$state/held-packages"
@@ -247,7 +248,7 @@ enable_universe() {
   if [[ -f "$src" ]]; then
     log_info "universe in ubuntu.sources: $(ensure_universe_deb822 "$src")"
   else
-    codename="$(. "$root/etc/os-release" && printf '%s' "${VERSION_CODENAME:-}")"
+    codename="$(sed -n 's/^VERSION_CODENAME=//p' "$root/etc/os-release" | tr -d '"')"
     [[ -n "$codename" ]] || die "cannot determine VERSION_CODENAME for ubuntu.sources"
     log_warn "rootfs has no ubuntu.sources; writing the default archive sources for ${codename}"
     write_default_ubuntu_sources "$src" "$codename"
@@ -362,6 +363,7 @@ finalise_desktop() {
   fi
   in_chroot dconf update
   in_chroot glib-compile-schemas /usr/share/glib-2.0/schemas
+  # shellcheck disable=SC2016 # expanded by the shell inside the chroot, not here
   in_chroot sh -c 'for d in /usr/share/icons/*/; do [ -f "$d/index.theme" ] && gtk-update-icon-cache -q -f -t "$d"; done; true'
   in_chroot systemctl --global enable ydotoold.service
   local sandbox=/opt/claudeos/panel/chrome-sandbox
@@ -373,6 +375,7 @@ finalise_desktop() {
 }
 
 write_manifest() {
+  # shellcheck disable=SC2016 # ${Package} is a dpkg-query format field, not a shell variable
   run_to "$WORK_DIR/filesystem.manifest" chroot "$(rootfs_dir)" dpkg-query -W --showformat='${Package}\t${Version}\n'
 }
 

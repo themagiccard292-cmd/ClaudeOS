@@ -1,0 +1,13 @@
+<?xml version="1.0"?>
+<!DOCTYPE wallpapers SYSTEM "gnome-wp-list.dtd">
+<wallpapers>
+  <wallpaper deleted="false">
+    <name>ClaudeOS</name>
+    <filename>/usr/share/backgrounds/claudeos/claudeos-light.png</filename>
+    <filename-dark>/usr/share/backgrounds/claudeos/claudeos-dark.png</filename-dark>
+    <options>zoom</options>
+    <shade_type>solid</shade_type>
+    <pcolor>#F5F4EF</pcolor>
+    <scolor>#262624</scolor>
+  </wallpaper>
+</wallpapers>

@@ -1,6 +1,6 @@
 import clsx from 'clsx';
-import { MessageSquare, SquarePen, Trash2 } from 'lucide-react';
-import { useState } from 'react';
+import { MessageSquare, PanelLeftClose, SquarePen, Trash2 } from 'lucide-react';
+import { useEffect, useState } from 'react';
 import type { ConversationSummary } from '../../shared/protocol';
 import { formatRelativeTime } from '../lib/format';
 
@@ -87,6 +87,17 @@ function RecentRow({
 
 /** Collapsible history drawer inside the panel (pushes the chat when wide, overlays it when narrow). */
 export function HistoryDrawer({ open, overlay, recents, activeId, now, onNewChat, onSelect, onDelete, onClose }: HistoryDrawerProps) {
+  // Escape closes the overlaying drawer (before the global "Escape hides the panel" handler sees it).
+  useEffect(() => {
+    if (!open || !overlay) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== 'Escape') return;
+      e.stopPropagation();
+      onClose();
+    };
+    window.addEventListener('keydown', onKey, true);
+    return () => window.removeEventListener('keydown', onKey, true);
+  }, [open, overlay, onClose]);
   return (
     <>
       {overlay && open && (
@@ -103,16 +114,19 @@ export function HistoryDrawer({ open, overlay, recents, activeId, now, onNewChat
           overlay && !open && '-translate-x-full shadow-none',
         )}
       >
-        <div className="px-2.5 pb-1 pt-2.5">
+        <div className="flex items-center gap-1 px-2.5 pb-1 pt-2.5">
           <button
             type="button"
             onClick={onNewChat}
-            className="flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-[13px] font-medium text-ink transition-colors hover:bg-hover"
+            className="flex min-w-0 flex-1 items-center gap-2 rounded-lg px-2.5 py-2 text-[13px] font-medium text-ink transition-colors hover:bg-hover"
           >
             <span className="flex h-6 w-6 items-center justify-center rounded-full bg-accent text-white">
               <SquarePen size={13} aria-hidden />
             </span>
             New chat
+          </button>
+          <button type="button" className="icon-btn" aria-label="Close history" onClick={onClose} title="Close history">
+            <PanelLeftClose size={17} strokeWidth={1.8} aria-hidden />
           </button>
         </div>
         <h2 className="px-5 pb-1 pt-3 text-[11.5px] font-medium text-muted">Recents</h2>

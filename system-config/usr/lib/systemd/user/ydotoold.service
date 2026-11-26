@@ -1,0 +1,16 @@
+[Unit]
+Description=ydotool input daemon (ClaudeOS computer control)
+Documentation=man:ydotoold(8)
+# The ydotool package ships ydotool.service on the same socket; claudeos-core masks it.
+StartLimitIntervalSec=0
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/ydotoold --socket-path=%t/.ydotool_socket --socket-perm=0600
+# /dev/uinput access (uaccess ACL) can appear after the user manager starts: keep retrying.
+Restart=on-failure
+RestartSec=3
+KillMode=process
+
+[Install]
+WantedBy=default.target

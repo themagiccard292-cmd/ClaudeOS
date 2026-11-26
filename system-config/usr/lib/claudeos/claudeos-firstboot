@@ -1,0 +1,41 @@
+#!/usr/bin/env bash
+# First-boot onboarding (C9). Never runs in the live session; opens the wizard when the
+# onboarding stamp is missing or Claude is signed out.
+set -euo pipefail
+
+CMDLINE_FILE="${CLAUDEOS_PROC_CMDLINE:-/proc/cmdline}"
+CDROM="${CLAUDEOS_CDROM:-/cdrom}"
+CONF="${CLAUDEOS_CONFIG_DIR:-${HOME}/.config/claudeos}"
+
+# Live session: the installer is offered instead.
+if grep -qw 'boot=casper' "$CMDLINE_FILE" 2>/dev/null || [ -e "${CDROM}/casper" ]; then
+  exit 0
+fi
+
+# Single instance per login.
+lock="${XDG_RUNTIME_DIR:-/tmp}/claudeos-firstboot.lock"
+exec 9>"$lock"
+flock -n 9 || exit 0
+
+find_claude() {
+  if [ -n "${CLAUDEOS_CLAUDE_BIN:-}" ]; then echo "$CLAUDEOS_CLAUDE_BIN"; return; fi
+  command -v claude 2>/dev/null || {
+    for p in /usr/local/bin/claude /usr/bin/claude; do [ -x "$p" ] && { echo "$p"; return; }; done
+  }
+}
+
+need=0
+[ -e "${CONF}/onboarding-done" ] || need=1
+
+claude_bin="$(find_claude || true)"
+if [ -n "$claude_bin" ]; then
+  status="$(env -u ANTHROPIC_API_KEY -u ANTHROPIC_AUTH_TOKEN -u ANTHROPIC_BASE_URL \
+    -u CLAUDE_CODE_USE_BEDROCK -u CLAUDE_CODE_USE_VERTEX -u CLAUDE_CODE_USE_FOUNDRY \
+    timeout 20 "$claude_bin" auth status --json 2>/dev/null || true)"
+  if printf '%s' "$status" | grep -Eq '"loggedIn"[[:space:]]*:[[:space:]]*false'; then
+    need=1
+  fi
+fi
+
+[ "$need" -eq 1 ] || exit 0
+exec claudeos-panel onboarding

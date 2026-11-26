@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Name=ClaudeOS session setup
+Comment=Register the desktop tools with Claude Code
+Exec=/usr/lib/claudeos/claudeos-session-init
+Terminal=false
+NoDisplay=true
+OnlyShowIn=GNOME;
+X-GNOME-Autostart-enabled=true
+X-GNOME-Autostart-Delay=1

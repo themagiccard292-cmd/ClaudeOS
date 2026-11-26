@@ -1,0 +1,6 @@
+PKG_NAME="claudeos-core"
+PKG_DESCRIPTION="ClaudeOS OS integration: Claude Code managed settings and system prompt, first-run, doctor, input services"
+PKG_DEPENDS="nodejs (>= 22), npm, python3, dconf-cli, jq, curl, claudeos-computer-control"
+PKG_RECOMMENDS="claudeos-side-panel, ydotool, gnome-screenshot, libnotify-bin, pkexec | policykit-1"
+PKG_ARCH="all"
+PKG_SECTION="admin"

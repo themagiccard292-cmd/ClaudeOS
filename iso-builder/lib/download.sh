@@ -10,7 +10,7 @@ volume_id() { printf '%s %s %s\n' "${PRODUCT_NAME:-ClaudeOS}" "$1" "${ISO_ARCH:-
 # parse_sha256sums FILE NAME: print the hash listed for NAME (accepts "hash *name" and "hash  name").
 parse_sha256sums() {
   awk -v n="$2" '
-    NF >= 2 { f = $2; sub(/^\*/, "", f); if (f == n && $1 ~ /^[0-9a-fA-F]{64}$/) { print tolower($1); found = 1; exit } }
+    NF >= 2 { f = $2; sub(/^\*/, "", f); if (f == n && length($1) == 64 && $1 ~ /^[0-9a-fA-F]+$/) { print tolower($1); found = 1; exit } }
     END { if (!found) exit 1 }
   ' "$1"
 }

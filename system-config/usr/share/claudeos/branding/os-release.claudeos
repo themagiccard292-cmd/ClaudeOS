@@ -1,0 +1,14 @@
+PRETTY_NAME="ClaudeOS 26.04.1 (Ubuntu 26.04.1 LTS)"
+NAME="ClaudeOS"
+VERSION_ID="26.04.1"
+VERSION="26.04.1 (Resolute Raccoon)"
+VERSION_CODENAME=resolute
+ID=ubuntu
+ID_LIKE=debian
+HOME_URL="https://github.com/themagiccard292-cmd/ClaudeOS"
+SUPPORT_URL="https://github.com/themagiccard292-cmd/ClaudeOS"
+BUG_REPORT_URL="https://github.com/themagiccard292-cmd/ClaudeOS/issues"
+PRIVACY_POLICY_URL="https://www.ubuntu.com/legal/terms-and-policies/privacy-policy"
+UBUNTU_CODENAME=resolute
+CLAUDEOS_BASE=ubuntu-26.04.1
+LOGO=ubuntu-logo

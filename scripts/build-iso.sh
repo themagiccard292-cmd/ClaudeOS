@@ -8,10 +8,22 @@ ISO_BUILDER_DIR="$REPO_ROOT/iso-builder"
 
 # shellcheck source=iso-builder/config/build.conf
 source "$ISO_BUILDER_DIR/config/build.conf"
-for lib in common download preflight rootfs chroot squashfs bootcfg repack; do
-  # shellcheck source=/dev/null
-  source "$ISO_BUILDER_DIR/lib/$lib.sh"
-done
+# shellcheck source=iso-builder/lib/common.sh
+source "$ISO_BUILDER_DIR/lib/common.sh"
+# shellcheck source=iso-builder/lib/download.sh
+source "$ISO_BUILDER_DIR/lib/download.sh"
+# shellcheck source=iso-builder/lib/preflight.sh
+source "$ISO_BUILDER_DIR/lib/preflight.sh"
+# shellcheck source=iso-builder/lib/rootfs.sh
+source "$ISO_BUILDER_DIR/lib/rootfs.sh"
+# shellcheck source=iso-builder/lib/chroot.sh
+source "$ISO_BUILDER_DIR/lib/chroot.sh"
+# shellcheck source=iso-builder/lib/squashfs.sh
+source "$ISO_BUILDER_DIR/lib/squashfs.sh"
+# shellcheck source=iso-builder/lib/bootcfg.sh
+source "$ISO_BUILDER_DIR/lib/bootcfg.sh"
+# shellcheck source=iso-builder/lib/repack.sh
+source "$ISO_BUILDER_DIR/lib/repack.sh"
 
 usage() {
   cat <<EOF
