@@ -108,7 +108,7 @@ disable_cdrom_sources() {
     if [[ "$(strip_cdrom_sources "$f")" == changed ]]; then
       log_info "removed cdrom source(s) from ${f#"$root"/}"
       # A file left with no stanzas/lines is dead weight (and confuses apt): drop it.
-      [[ -s "$f" ]] && grep -q '[^[:space:]]' "$f" || rm -f "$f"
+      if [[ ! -s "$f" ]] || ! grep -q '[^[:space:]]' "$f"; then rm -f "$f"; fi
     fi
   done
 }
