@@ -464,6 +464,10 @@ _SAFE_MCP = frozenset(
 )
 
 
+_DESKTOP_TOOLS = _SAFE_MCP | {"run_command", "read_file", "write_file", "delete_path", "move_path", "dbus_call",
+                              "systemd", "gsettings"}
+
+
 def _str(value: Any) -> str:
     return value if isinstance(value, str) else ""
 
@@ -486,6 +490,8 @@ def classify(tool_name: str, tool_input: Mapping[str, Any] | None, *, home: str,
         return classify_path("read", path, home=home, cwd=cwd) if path else ALLOW
     if tool_name in _SAFE_BUILTINS:
         return ALLOW
+    if tool_name in _DESKTOP_TOOLS:  # bare name of one of our own tools (used by their self-gate)
+        return classify_desktop_tool(tool_name, params, home=home, cwd=cwd, user=user)
     return UNKNOWN_TOOL
 
 

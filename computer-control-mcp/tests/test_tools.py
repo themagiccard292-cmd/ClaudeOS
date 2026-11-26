@@ -6,9 +6,7 @@ import os
 import sys
 import time
 
-
 import pytest
-
 from claudeos_mcp.approval import ApprovalClient
 from claudeos_mcp.backends import files, shell
 from claudeos_mcp.backends.portal import PortalError
@@ -25,14 +23,14 @@ EXPECTED_TOOLS = {
 }
 
 
-def call(server, name: str, **args):
-    out = asyncio.run(server.call_tool(name, args))
+def call(server, _tool: str, **args):
+    out = asyncio.run(server.call_tool(_tool, args))
     content = out[0] if isinstance(out, tuple) else out
     return content
 
 
-def text_of(server, name: str, **args) -> str:
-    return "\n".join(c.text for c in call(server, name, **args) if getattr(c, "type", "") == "text")
+def text_of(server, _tool: str, **args) -> str:
+    return "\n".join(c.text for c in call(server, _tool, **args) if getattr(c, "type", "") == "text")
 
 
 # ---- approval client against a real unix socket ------------------------------------------

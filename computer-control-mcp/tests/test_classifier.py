@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import pytest
-
 from claudeos_mcp.safety.classifier import classify
 
 HOME = "/home/tester"
@@ -27,7 +26,7 @@ ALLOW = [
     "xargs -n1 echo", "dd if=/dev/zero of=./disk.img bs=1M count=10", "whoami", "ssh-add -l",
     "uname -a", "lsblk", "lsusb", "nmcli device status", "flatpak list", "snap list", "snap info firefox",
     "git commit -m 'sudo rm -rf /'", "cat ~/.bashrc", "ls ~/.ssh", "rmdir empty",
-    "bash -c 'echo hi'", "sh -c 'ls /etc'", "env FOO=bar ls", "find . -type f -exec echo {} \;",
+    "bash -c 'echo hi'", "sh -c 'ls /etc'", "env FOO=bar ls", r"find . -type f -exec echo {} \;",
 ]
 
 CONFIRM = [
@@ -50,7 +49,7 @@ CONFIRM = [
     "env sudo ls", "nice sudo ls", "timeout 5 sudo ls", "echo hi && sudo ls", "ls; rm -rf ~/Documents",
     "ls | sudo tee /etc/foo", "xargs rm -rf", "find ~/Documents -exec rm -rf {} +",
     "echo / | xargs rm -rf", "\\sudo ls", "/usr/bin/sudo ls", "command sudo ls", "'sudo' ls", "su", "su - root",
-    
+
     "sudo -E env rm foo", "env -i sudo ls", "setsid sudo ls",
 ]
 
@@ -60,7 +59,7 @@ BLOCK = [
     "rm -rf $HOME", "rm -rf ~/*", "rm -rf $HOME/*", "rm -rf /usr/*", "rm -fr /", "rm -r -f /", "rm -rf / --no-preserve-root",
     "\\rm -rf /", "/bin/rm -rf /", "command rm -rf /", "r\"\"m -rf /", "'rm' -rf /", "rm -rf '/'", 'rm -rf "/usr"',
     "sudo rm -rf /", "bash -c 'rm -rf /usr'", "bash -c \"rm -rf /\"", "sh -c 'rm -rf /etc'", "env rm -rf /",
-    "sudo -u root rm -rf /", "nice rm -rf /", "nohup rm -rf / &", "timeout 5 rm -rf /", 
+    "sudo -u root rm -rf /", "nice rm -rf /", "nohup rm -rf / &", "timeout 5 rm -rf /",
     "find / -delete", "find /usr -exec rm -rf {} +", "ls; rm -rf /", "true && rm -rf /", "false || rm -rf /",
     "echo hi | rm -rf /", "rm -rf /tmp/../usr", "rm -rf /usr/../etc",
     "dd if=/dev/zero of=/dev/sda", "dd if=x of=/dev/nvme0n1 bs=1M", "dd if=/dev/urandom of=/dev/mmcblk0",

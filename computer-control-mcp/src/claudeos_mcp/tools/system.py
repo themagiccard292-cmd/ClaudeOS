@@ -36,7 +36,7 @@ def register(mcp: FastMCP, ctx: AppContext) -> None:
             return denied(gate)
         return shell.run_command(ctx.runner, command, cwd=shell.validate_cwd(cwd, home), timeout_s=timeout_s)
 
-    @mcp.tool()
+    @mcp.tool(structured_output=False)
     @safe_tool
     def read_file(
         path: Annotated[str, Field(description="File path (~ allowed; relative = from home)")],

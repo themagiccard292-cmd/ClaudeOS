@@ -40,7 +40,7 @@ def _describe_mapping(m: Mapping) -> str:
 
 
 def register(mcp: FastMCP, ctx: AppContext) -> None:
-    @mcp.tool()
+    @mcp.tool(structured_output=False)
     @safe_tool
     def screenshot(
         region: Annotated[

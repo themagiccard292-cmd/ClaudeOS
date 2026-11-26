@@ -7,7 +7,6 @@ import threading
 from pathlib import Path
 
 import pytest
-
 from claudeos_mcp.config import Config
 from claudeos_mcp.context import build_context
 from claudeos_mcp.runner import RunResult

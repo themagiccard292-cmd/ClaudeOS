@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import pytest
-
 from claudeos_mcp.backends.input_ import XdotoolBackend, YdotoolBackend, select_backend
 from claudeos_mcp.geometry import (
     HOME_DISTANCE,
