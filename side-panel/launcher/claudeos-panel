@@ -1,0 +1,199 @@
+#!/usr/bin/env python3
+"""claudeos-panel: command line front end of the ClaudeOS side panel (ARCHITECTURE C2).
+
+Talks NDJSON over the panel's unix socket (C1). When nobody is listening it spawns the Electron app
+($CLAUDEOS_PANEL_APP) detached, waits for the socket and then sends the command.
+"""
+
+from __future__ import annotations
+
+import json
+import os
+import socket
+import subprocess
+import sys
+import time
+from pathlib import Path
+
+COMMANDS = ("toggle", "show", "hide", "new-chat", "attach", "ask", "onboarding", "status", "quit")
+DEFAULT_APP = "/opt/claudeos/panel/claudeos-panel-app"
+SPAWN_TIMEOUT = 20.0
+REPLY_TIMEOUT = 30.0
+USAGE = (
+    "usage: claudeos-panel [toggle|show|hide|new-chat|attach <path>...|ask <text> [--send] [--path P]...|"
+    "onboarding|status|quit] [--background] [--no-spawn]"
+)
+
+
+class CliError(Exception):
+    """A user-facing failure: printed as one line on stderr, exit code 1."""
+
+
+def socket_path(env: dict[str, str] | None = None) -> str:
+    env = os.environ if env is None else env
+    explicit = env.get("CLAUDEOS_PANEL_SOCKET")
+    if explicit:
+        return explicit
+    runtime = env.get("XDG_RUNTIME_DIR")
+    if runtime and os.path.isabs(runtime):
+        return os.path.join(runtime, "claudeos", "panel.sock")
+    return os.path.join("/tmp", f"claudeos-{os.getuid()}", "panel.sock")
+
+
+def absolute(path: str) -> str:
+    return str(Path(path).expanduser().absolute()) if not os.path.isabs(path) else path
+
+
+def parse_args(argv: list[str]) -> tuple[dict[str, object], bool, bool]:
+    """Return (request, background, no_spawn). Raises CliError on bad usage."""
+    background = no_spawn = send = False
+    command: str | None = None
+    positional: list[str] = []
+    paths: list[str] = []
+    only_positional = False
+    i = 0
+    while i < len(argv):
+        arg = argv[i]
+        i += 1
+        if not only_positional and arg == "--":
+            only_positional = True
+        elif not only_positional and arg.startswith("-") and arg != "-":
+            if arg == "--background":
+                background = True
+            elif arg == "--no-spawn":
+                no_spawn = True
+            elif arg == "--send":
+                send = True
+            elif arg == "--path":
+                if i >= len(argv):
+                    raise CliError("--path needs a value")
+                paths.append(argv[i])
+                i += 1
+            elif arg.startswith("--path="):
+                paths.append(arg[len("--path=") :])
+            elif arg in ("-h", "--help"):
+                raise CliError(USAGE)
+            else:
+                raise CliError(f"unknown option {arg}")
+        elif command is None:
+            if arg not in COMMANDS:
+                raise CliError(f"unknown command {arg}")
+            command = arg
+        else:
+            positional.append(arg)
+
+    command = command or "show"
+    request: dict[str, object] = {"cmd": command}
+    if command == "attach":
+        request["paths"] = [absolute(p) for p in positional + paths]
+    elif command == "ask":
+        text = " ".join(positional).strip()
+        if not text:
+            raise CliError("ask needs some text")
+        request["text"] = text
+        if paths:
+            request["paths"] = [absolute(p) for p in paths]
+        if send:
+            request["send"] = True
+    elif positional:
+        raise CliError(f"{command} takes no arguments")
+    return request, background, no_spawn
+
+
+def exchange(sock_path: str, request: dict[str, object], timeout: float = REPLY_TIMEOUT) -> dict[str, object]:
+    """Send one request line, return the single response line."""
+    request = {**request, "id": f"cli-{os.getpid()}"}
+    with socket.socket(socket.AF_UNIX, socket.SOCK_STREAM) as sock:
+        sock.settimeout(timeout)
+        sock.connect(sock_path)
+        sock.sendall(json.dumps(request).encode() + b"\n")
+        buf = b""
+        while b"\n" not in buf:
+            chunk = sock.recv(65536)
+            if not chunk:
+                break
+            buf += chunk
+    line = buf.split(b"\n", 1)[0]
+    if not line:
+        raise CliError("the panel closed the connection without answering")
+    try:
+        reply = json.loads(line)
+    except ValueError as exc:
+        raise CliError("the panel sent an unreadable reply") from exc
+    if not isinstance(reply, dict):
+        raise CliError("the panel sent an unexpected reply")
+    return reply
+
+
+def is_listening(sock_path: str) -> bool:
+    try:
+        with socket.socket(socket.AF_UNIX, socket.SOCK_STREAM) as sock:
+            sock.settimeout(1.0)
+            sock.connect(sock_path)
+        return True
+    except OSError:
+        return False
+
+
+def spawn_app(extra_args: list[str]) -> None:
+    app = os.environ.get("CLAUDEOS_PANEL_APP") or DEFAULT_APP
+    try:
+        subprocess.Popen(  # noqa: S603 - list form, no shell
+            [app, "--ozone-platform=x11", *extra_args],
+            stdin=subprocess.DEVNULL,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+            start_new_session=True,
+            close_fds=True,
+        )
+    except OSError as exc:
+        raise CliError(f"cannot start the panel ({app}): {exc.strerror or exc}") from exc
+
+
+def wait_for_socket(sock_path: str, timeout: float = SPAWN_TIMEOUT) -> None:
+    deadline = time.monotonic() + timeout
+    while time.monotonic() < deadline:
+        if is_listening(sock_path):
+            return
+        time.sleep(0.1)
+    raise CliError(f"the panel did not start within {int(timeout)} s")
+
+
+def run(argv: list[str]) -> int:
+    request, background, no_spawn = parse_args(argv)
+    path = socket_path()
+    running = is_listening(path)
+
+    if background:
+        # Autostart: launch hidden when absent, never disturb a running panel.
+        if not running and not no_spawn:
+            spawn_app(["--background"])
+        return 0
+
+    if not running:
+        if no_spawn:
+            raise CliError("the panel is not running")
+        spawn_app([])
+        wait_for_socket(path)
+
+    reply = exchange(path, request)
+    if reply.get("ok") is not True:
+        raise CliError(f"the panel refused the request: {reply.get('error', 'unknown error')}")
+    if request["cmd"] == "status":
+        print(json.dumps(reply))
+    return 0
+
+
+def main() -> int:
+    try:
+        return run(sys.argv[1:])
+    except CliError as exc:
+        print(f"claudeos-panel: {exc}", file=sys.stderr)
+        return 1
+    except OSError as exc:
+        print(f"claudeos-panel: {exc.strerror or exc}", file=sys.stderr)
+        return 1
+
+
+if __name__ == "__main__":
+    sys.exit(main())

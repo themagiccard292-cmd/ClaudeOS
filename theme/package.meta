@@ -1,6 +1,6 @@
 PKG_NAME="claudeos-theme"
 PKG_DESCRIPTION="ClaudeOS warm Claude-inspired desktop theme: wallpapers, icons, GNOME defaults, GTK colours"
 PKG_DEPENDS="librsvg2-common, libglib2.0-bin, hicolor-icon-theme, fonts-inter, fonts-jetbrains-mono"
-PKG_RECOMMENDS="yaru-theme-gnome-shell, gtk-update-icon-cache"
+PKG_RECOMMENDS="yaru-theme-gnome-shell"
 PKG_ARCH="all"
 PKG_SECTION="x11"

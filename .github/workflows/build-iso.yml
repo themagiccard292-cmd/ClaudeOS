@@ -91,6 +91,47 @@ jobs:
           retention-days: 7
           if-no-files-found: error
 
+  # Single-file full ISO: GitHub release assets cap at 2 GiB, but a container registry layer can hold ~10 GB.
+  # The ISO is pushed to ghcr.io as an OCI artifact (oras). New packages start PRIVATE: make the package
+  # public once (repo -> Packages -> claudeos-iso -> Package settings) to allow anonymous
+  # `scripts/download-iso.sh` / `oras pull`.
+  publish-ghcr:
+    name: Publish full ISO to ghcr.io
+    needs: build
+    if: startsWith(github.ref, 'refs/tags/v') || inputs.publish
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Download ISO artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: claudeos-iso
+          path: dist
+
+      - uses: oras-project/setup-oras@v1
+        with:
+          version: 1.2.3
+
+      - name: Push ISO to ghcr.io
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ACTOR: ${{ github.actor }}
+          OWNER: ${{ github.repository_owner }}
+        working-directory: dist
+        run: |
+          set -euo pipefail
+          iso="claudeos-${ISO_VERSION}-amd64.iso"
+          sha256sum -c "$iso.sha256"
+          ref="ghcr.io/${OWNER,,}/claudeos-iso"
+          printf '%s' "$GH_TOKEN" | oras login ghcr.io --username "$ACTOR" --password-stdin
+          oras push "$ref:${ISO_VERSION}" "$iso:application/x-iso9660-image" "$iso.sha256:text/plain" \
+            --annotation "org.opencontainers.image.source=https://github.com/${GITHUB_REPOSITORY}"
+          oras tag "$ref:${ISO_VERSION}" latest
+          echo "Pushed $ref:${ISO_VERSION} (single full ISO). Download with: scripts/download-iso.sh --repo ${GITHUB_REPOSITORY}" >> "$GITHUB_STEP_SUMMARY"
+
   release:
     name: Publish release
     needs: build
@@ -144,7 +185,10 @@ jobs:
           cat > release-notes.md <<EOF
           ClaudeOS ${ISO_VERSION} (Ubuntu ${ISO_VERSION} LTS + Claude Code), amd64.
 
-          **The ISO is split into parts** because GitHub release assets are limited to 2 GiB per file.
+          **Full single-file ISO:** `scripts/download-iso.sh --repo ${GITHUB_REPOSITORY}` (pulls it from ghcr.io, resumable, verifies SHA256;
+          the package must be public, see docs/BUILDING.md).
+
+          **The release assets are split into parts** because GitHub release assets are limited to 2 GiB per file.
           Download every \`${iso}.part-*\` file plus \`SHA256SUMS\`, then join and verify:
 
           \`\`\`sh

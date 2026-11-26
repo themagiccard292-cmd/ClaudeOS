@@ -83,3 +83,15 @@ workflow structure, and real `mksquashfs`/`xorriso` calls on tiny synthetic inpu
 
 **Not verified**: a full run of the pipeline (needs root, ~45 GB, network), booting the ISO (BIOS/UEFI/Secure Boot),
 the Calamares install, `claude` inside the chroot, and the GitHub workflows on a real runner.
+
+## Getting the full ISO (one file)
+
+GitHub release assets are capped at 2 GiB per file and the ISO is several GiB, so there are three ways to obtain it:
+
+| Source | Command | Notes |
+|---|---|---|
+| **ghcr.io (recommended)** | `scripts/download-iso.sh --repo OWNER/ClaudeOS` | Single full file, resumable, verifies the registry digest and the SHA256. Needs `curl` + `jq`. The CI job `publish-ghcr` pushes `ghcr.io/<owner>/claudeos-iso:<version>` (also `:latest`) on tag pushes or when `publish` is ticked. **New packages are private by default**: make the package public once (repo → Packages → `claudeos-iso` → Package settings → Change visibility), or set `GH_TOKEN` (a token with `read:packages`) to download a private one. |
+| Workflow artifact | `scripts/download-iso.sh --source artifact --repo OWNER/ClaudeOS --run-id <id>` | Full ISO, needs `gh` logged in, expires after 7 days. Also downloadable from the Actions run page. |
+| Release parts | `scripts/download-iso.sh --source release --repo OWNER/ClaudeOS` | Split `*.iso.part-NN` files joined by `scripts/join-iso.sh`; verifies SHA256SUMS. |
+
+Verified: the downloader is covered by offline tests against a fake registry. Not verified: an actual push to ghcr.io or a download from it (that needs a real CI run).

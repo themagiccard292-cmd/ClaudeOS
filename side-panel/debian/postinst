@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+# Reload the AppArmor profile that lets the Electron app create user namespaces (Ubuntu 24.04+ restriction).
+set -euo pipefail
+
+profile=/etc/apparmor.d/claudeos-panel
+if [ "${1:-configure}" = "configure" ] && [ -f "$profile" ] && command -v apparmor_parser >/dev/null 2>&1; then
+    apparmor_parser -r -T -W "$profile" >/dev/null 2>&1 || true
+fi
+exit 0

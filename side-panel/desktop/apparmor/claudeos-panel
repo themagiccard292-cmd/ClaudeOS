@@ -1,0 +1,9 @@
+abi <abi/4.0>,
+include <tunables/global>
+
+# Ubuntu 24.04+ blocks unprivileged user namespaces; Chromium's sandbox needs them.
+profile claudeos-panel /opt/claudeos/panel/claudeos-panel-app flags=(unconfined) {
+  userns,
+
+  include if exists <local/claudeos-panel>
+}

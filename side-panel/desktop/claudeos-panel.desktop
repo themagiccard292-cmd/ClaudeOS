@@ -1,0 +1,21 @@
+[Desktop Entry]
+Type=Application
+Version=1.0
+Name=Claude
+GenericName=AI Assistant
+Comment=Chat with Claude and let it work on your computer
+Exec=claudeos-panel show
+Icon=claudeos-panel
+Terminal=false
+Categories=Utility;
+Keywords=Claude;AI;assistant;chat;
+StartupWMClass=claudeos-panel-app
+Actions=NewChat;Toggle;
+
+[Desktop Action NewChat]
+Name=New chat
+Exec=claudeos-panel new-chat
+
+[Desktop Action Toggle]
+Name=Show or hide panel
+Exec=claudeos-panel toggle
