@@ -227,7 +227,7 @@ export class PanelServer {
     }
     let reply: Reply;
     try {
-      reply = await this.dispatch(r.cmd, r, signal);
+      reply = await this.handle(r.cmd, r, signal);
     } catch (err) {
       this.log.error('socket.command-failed', { cmd: r.cmd, message: (err as Error).message });
       reply = { ok: false, error: 'internal-error' };
@@ -239,7 +239,11 @@ export class PanelServer {
     this.write(sock, { ...idPart, ...reply });
   }
 
-  private async dispatch(cmd: string, r: Record<string, unknown>, signal: AbortSignal): Promise<Reply> {
+  /**
+   * Validates and executes one request (without the `id`/`quit` socket plumbing). Also used for commands given on the
+   * app's own command line at first launch.
+   */
+  async handle(cmd: string, r: Record<string, unknown>, signal: AbortSignal = new AbortController().signal): Promise<Reply> {
     const c = this.opts.controller;
     const bad: Reply = { ok: false, error: 'bad-request' };
     this.log.info('socket.command', { cmd: /^[a-z-]{1,32}$/.test(cmd) ? cmd : 'invalid' });

@@ -139,6 +139,8 @@ export interface AuthManagerOptions {
 interface LoginAttempt {
   proc: ChildProcess | null;
   output: string;
+  /** stderr alone: its last line is the most useful failure message. */
+  errorOutput: string;
   urlSeen: boolean;
   needCodeSent: boolean;
   finished: boolean;
@@ -202,6 +204,7 @@ export class AuthManager {
     const attempt: LoginAttempt = {
       proc: null,
       output: '',
+      errorOutput: '',
       urlSeen: false,
       needCodeSent: false,
       finished: false,
@@ -221,9 +224,12 @@ export class AuthManager {
       return;
     }
     attempt.proc = proc;
-    const onData = (chunk: Buffer): void => this.onLoginOutput(attempt, chunk.toString('utf8'));
-    proc.stdout?.on('data', onData);
-    proc.stderr?.on('data', onData);
+    proc.stdout?.on('data', (chunk: Buffer) => this.onLoginOutput(attempt, chunk.toString('utf8')));
+    proc.stderr?.on('data', (chunk: Buffer) => {
+      const text = chunk.toString('utf8');
+      if (attempt.errorOutput.length < 16 * 1024) attempt.errorOutput += stripAnsi(text);
+      this.onLoginOutput(attempt, text);
+    });
     proc.stdin?.on('error', () => undefined);
     proc.once('error', (err) => {
       attempt.proc = null;
@@ -322,7 +328,7 @@ export class AuthManager {
       this.finish(attempt, { type: 'failed', message: 'Sign-in needs a terminal. Open a terminal and run: claudeos-login' });
       return;
     }
-    const lastLine = attempt.output
+    const lastLine = (attempt.errorOutput.trim() ? attempt.errorOutput : attempt.output)
       .split('\n')
       .map((l) => l.trim())
       .filter(Boolean)

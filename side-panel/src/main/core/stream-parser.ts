@@ -195,8 +195,8 @@ export class StreamTranslator {
   /** Closes every open message (used when the process exits mid-turn). */
   flush(): ChatEvent[] {
     const out: ChatEvent[] = [];
-    this.closeOpen(out);
     this.current = null;
+    this.closeOpen(out);
     return out;
   }
 
@@ -369,8 +369,8 @@ export class StreamTranslator {
   }
 
   private onResult(msg: Json, out: ChatEvent[]): void {
-    this.closeOpen(out);
     this.current = null;
+    this.closeOpen(out);
     const subtype = str(msg.subtype) ?? '';
     const isError = msg.is_error === true || subtype.startsWith('error');
     let resultText = str(msg.result);

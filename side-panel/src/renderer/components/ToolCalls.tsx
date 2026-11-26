@@ -60,6 +60,8 @@ const ICONS: Record<ToolIconKey, LucideIcon> = {
 };
 
 export const OUTPUT_LIMIT = 4000;
+/** Summaries that are code-like (commands, paths, patterns) render in mono; the rest in the UI font. */
+const MONO_SUMMARY = new Set<ToolIconKey>(['terminal', 'file-read', 'file-edit', 'folder', 'search', 'move', 'trash', 'keyboard']);
 
 /** Pretty-print a tool input; shell tools show the bare command. */
 function formatInput(name: string, input: unknown): { text: string; isCommand: boolean } {
@@ -132,7 +134,7 @@ function ToolBody({ block }: { block: ToolBlock }) {
             onClick={() => setZoomed(true)}
             aria-label="Enlarge screenshot"
           >
-            <img src={block.imageDataUrl} alt="Screenshot returned by the tool" className="block max-h-56 w-auto max-w-full" />
+            <img src={block.imageDataUrl} alt="Screenshot returned by the tool" className="block max-h-52 w-auto max-w-full" />
           </button>
           {zoomed && <ImageLightbox src={block.imageDataUrl} alt="Screenshot" onClose={() => setZoomed(false)} />}
         </>
@@ -165,7 +167,9 @@ function ToolBody({ block }: { block: ToolBlock }) {
 export function ToolRow({ block }: { block: ToolBlock }) {
   const [open, setOpen] = useState(false);
   const bodyId = useId();
-  const Icon = ICONS[toolIcon(block.name)];
+  const iconKey = toolIcon(block.name);
+  const Icon = ICONS[iconKey];
+  const monoSummary = MONO_SUMMARY.has(iconKey);
   const label = toolLabel(block.name, block.status);
   const summary = toolSummary(block.name, block.input);
   return (
@@ -179,7 +183,11 @@ export function ToolRow({ block }: { block: ToolBlock }) {
       >
         <Icon size={15} strokeWidth={1.8} className="shrink-0 text-muted" aria-hidden />
         <span className="shrink-0 text-[13px] font-medium text-ink">{label}</span>
-        {summary && <span className="min-w-0 flex-1 truncate font-mono text-[11.5px] text-muted">{summary}</span>}
+        {summary && (
+          <span className={clsx('min-w-0 flex-1 truncate text-muted', monoSummary ? 'font-mono text-[11.5px]' : 'text-[12.5px]')}>
+            {summary}
+          </span>
+        )}
         {!summary && <span className="flex-1" />}
         <span className="flex shrink-0 items-center gap-1.5">
           {block.status === 'running' && <Spinner size={13} className="text-accent" label="Running" />}

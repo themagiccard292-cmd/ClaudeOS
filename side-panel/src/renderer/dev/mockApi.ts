@@ -43,7 +43,10 @@ interface Emitter<T> {
   readonly size: number;
 }
 
-/** Tiny event emitter. With `buffer`, values emitted before anyone listens are replayed to the first listener. */
+/**
+ * Tiny event emitter. With `buffer`, values emitted before anyone listens are delivered on the next macrotask after
+ * the first subscription — to every listener present by then (the UI subscribes several hooks in one commit).
+ */
 function emitter<T>(buffer = false): Emitter<T> {
   const listeners = new Set<(v: T) => void>();
   const pending: T[] = [];
@@ -51,8 +54,7 @@ function emitter<T>(buffer = false): Emitter<T> {
     on(cb) {
       listeners.add(cb);
       if (buffer && pending.length) {
-        const queued = pending.splice(0);
-        setTimeout(() => queued.forEach((v) => cb(v)), 0);
+        setTimeout(() => pending.splice(0).forEach((v) => listeners.forEach((l) => l(v))), 0);
       }
       return () => {
         listeners.delete(cb);

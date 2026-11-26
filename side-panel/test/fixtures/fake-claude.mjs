@@ -88,7 +88,8 @@ if (argv[0] === 'auth') {
 }
 
 // ───────────── chat mode ─────────────
-log({ argv, cwd: process.cwd(), env: Object.fromEntries(Object.entries(env).filter(([k]) => /^(ANTHROPIC_|CLAUDE_CODE_USE_)/.test(k))) });
+const FORBIDDEN = ['ANTHROPIC_API_KEY', 'ANTHROPIC_AUTH_TOKEN', 'ANTHROPIC_BASE_URL', 'CLAUDE_CODE_USE_BEDROCK', 'CLAUDE_CODE_USE_VERTEX', 'CLAUDE_CODE_USE_FOUNDRY'];
+log({ argv, cwd: process.cwd(), env: Object.fromEntries(FORBIDDEN.filter((k) => k in env).map((k) => [k, env[k]])) });
 
 if (env.FAKE_CLAUDE_IGNORE_SIGINT === '1') process.on('SIGINT', () => {});
 else process.on('SIGINT', () => process.exit(130));
