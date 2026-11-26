@@ -138,6 +138,8 @@ export class PanelServer {
   /** Starts listening. Throws SocketInUseError when a live instance already owns the socket. */
   async start(): Promise<void> {
     const path = this.opts.socketPath;
+    // sockaddr_un.sun_path is 108 bytes including the terminating NUL.
+    if (Buffer.byteLength(path) > 107) throw new Error(`socket path is too long (max 107 bytes): ${path}`);
     prepareSocketDir(dirname(path), process.getuid?.());
     const probe = await probeSocket(path);
     if (probe === 'live') throw new SocketInUseError(path);

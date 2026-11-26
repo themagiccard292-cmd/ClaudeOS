@@ -4,11 +4,11 @@ from __future__ import annotations
 
 import json
 import os
+import shutil
 import socket
-import subprocess
 
 import pytest
-from conftest import BASE, LIB, fake_claude, load_script, run, write_exe
+from conftest import BASE, LIB, fake_claude, run, write_exe
 
 DOCTOR = LIB / "claudeos-doctor"
 
@@ -210,7 +210,8 @@ def test_session_init_replaces_stale_and_never_fails(tmp_path, clean_env, fakebi
     write_exe(fakebin / "claude", "exit 1")
     cj.write_text("not json")
     assert run([LIB / "claudeos-session-init"], env).returncode == 0
-    assert run([LIB / "claudeos-session-init"], {k: v for k, v in env.items() if k != "PATH"} | {"PATH": "/nonexistent"}).returncode == 0
+    no_path = dict(env, PATH="/nonexistent")  # no claude, no systemctl
+    assert run(["python3", LIB / "claudeos-session-init"], no_path).returncode == 0
 
 
 # ---- installer / update / login --------------------------------------------------------------
@@ -258,12 +259,10 @@ def test_installer_failures(tmp_path, clean_env, fakebin):
 
 
 def test_update_prints_before_after(tmp_path, clean_env, fakebin):
-    prefix = tmp_path / "pfx"
     write_exe(fakebin / "claude", 'echo "2.0.0 (Claude Code)"')
     inst = write_exe(tmp_path / "inst.sh", f'echo "$CLAUDE_CODE_VERSION" > "{tmp_path}/ver"\n'
                      f'printf \'#!/bin/sh\\necho "2.1.332 (Claude Code)"\\n\' > "{fakebin}/claude"')
     env = dict(clean_env, CLAUDEOS_ELEVATE="none", CLAUDEOS_INSTALL_SCRIPT=str(inst), HTTPS_PROXY="http://p:1")
-    del prefix
     proc = run([BASE / "usr/bin/claudeos-update", "--version", "2.1.332"], env)
     assert proc.returncode == 0, proc.stderr
     assert "before: 2.0.0" in proc.stdout and "after:  2.1.332" in proc.stdout and "Updated." in proc.stdout
@@ -293,17 +292,20 @@ def test_apply_branding_idempotent_and_revert(tmp_path):
     (root / "usr/lib/os-release").write_text(orig)
     (root / "etc/os-release").symlink_to("../usr/lib/os-release")
     (root / "etc/lsb-release").write_text('DISTRIB_ID=Ubuntu\nDISTRIB_DESCRIPTION="Ubuntu 26.04.1 LTS"\nDISTRIB_CODENAME=resolute\n')
-    env = dict(os.environ, ROOT=str(root), BRANDING_DIR=str(BASE / "usr/share/claudeos/branding"))
+    brand = tmp_path / "brand"
+    shutil.copytree(BASE / "usr/share/claudeos/branding", brand)
+    env = dict(os.environ, ROOT=str(root), BRANDING_DIR=str(brand))
     script = LIB / "apply-branding.sh"
     for _ in range(2):
         assert run([script], env).returncode == 0
     osr = (root / "etc/os-release").read_text()
     assert 'NAME="ClaudeOS"' in osr and "ID=ubuntu" in osr and "CLAUDEOS_BASE=ubuntu-26.04.1" in osr
+    assert "ID_LIKE=debian" in osr and 'VERSION_ID="26.04.1"' in osr
     assert (root / "etc/os-release").is_symlink()
-    assert (BASE / "usr/share/claudeos/branding/os-release.ubuntu-orig").exists() is False
+    assert (brand / "os-release.ubuntu-orig").read_text() == orig  # pristine, kept from the first run
     lsb = (root / "etc/lsb-release").read_text()
     assert lsb.count("DISTRIB_DESCRIPTION=") == 1 and "ClaudeOS 26.04.1" in lsb and "DISTRIB_CODENAME=resolute" in lsb
     assert "ClaudeOS" in (root / "etc/issue").read_text()
-    # the original was backed up once, from the pristine file
-    backup = root / "usr/share/claudeos/branding/os-release.ubuntu-orig"
-    assert not backup.exists()  # BRANDING_DIR points at the repo copy, which must stay untouched
+    assert run([script, "--revert"], env).returncode == 0
+    assert (root / "usr/lib/os-release").read_text() == orig
+    assert "Ubuntu 26.04.1 LTS" in (root / "etc/lsb-release").read_text()

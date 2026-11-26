@@ -54,7 +54,8 @@ is_pristine() {
 }
 
 backup_path() {
-  local base="$1.claudeos-bak-$(date +%Y%m%d%H%M%S)" candidate n=0
+  local base candidate n=0
+  base="$1.claudeos-bak-$(date +%Y%m%d%H%M%S)"
   candidate="$base"
   while [ -e "$candidate" ] || [ -L "$candidate" ]; do
     n=$((n + 1))

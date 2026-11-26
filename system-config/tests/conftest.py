@@ -2,9 +2,6 @@
 
 from __future__ import annotations
 
-import importlib.machinery
-import importlib.util
-import os
 import stat
 import subprocess
 from pathlib import Path
@@ -14,15 +11,6 @@ import pytest
 BASE = Path(__file__).resolve().parent.parent
 SETTINGS = BASE / "etc/claude-code/managed-settings.json"
 LIB = BASE / "usr/lib/claudeos"
-
-
-def load_script(path: Path):
-    """Import an extension-less python script as a module."""
-    loader = importlib.machinery.SourceFileLoader(path.name.replace("-", "_"), str(path))
-    spec = importlib.util.spec_from_loader(loader.name, loader)
-    mod = importlib.util.module_from_spec(spec)
-    loader.exec_module(mod)
-    return mod
 
 
 def write_exe(path: Path, body: str) -> Path:
@@ -70,6 +58,3 @@ def fake_claude(fakebin: Path, log: Path, logged_in: bool = True) -> Path:
         '  *) echo "2.1.332 (Claude Code)" ;;\n'
         "esac",
     )
-
-
-__all__ = ["BASE", "LIB", "SETTINGS", "load_script", "write_exe", "run", "fake_claude", "os"]

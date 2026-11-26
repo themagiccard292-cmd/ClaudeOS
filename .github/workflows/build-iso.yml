@@ -1,0 +1,173 @@
+name: Build ISO
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+    inputs:
+      ubuntu_version:
+        description: "Ubuntu point release to remaster"
+        required: true
+        default: "26.04.1"
+      release_tag:
+        description: "Release tag to create (default: v<ubuntu_version>-build<run number>)"
+        required: false
+        default: ""
+      publish:
+        description: "Publish a GitHub Release with the split ISO"
+        type: boolean
+        required: false
+        default: false
+
+# Read-only by default; only the release job gets contents: write.
+permissions:
+  contents: read
+
+concurrency:
+  group: build-iso-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  ISO_VERSION: ${{ inputs.ubuntu_version || '26.04.1' }}
+  WORK_DIR: /mnt/claudeos-work
+  CACHE_DIR: /mnt/claudeos-cache
+
+jobs:
+  build:
+    name: Build claudeos ISO
+    runs-on: ubuntu-24.04
+    timeout-minutes: 360
+    steps:
+      - name: Free disk space
+        run: |
+          set -euo pipefail
+          df -h / /mnt
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /usr/local/.ghcup /opt/hostedtoolcache/CodeQL
+          sudo docker image prune --all --force || true
+          sudo mkdir -p "$WORK_DIR" "$CACHE_DIR"
+          df -h / /mnt
+          avail_gb=$(df -P -B1G /mnt | awk 'NR == 2 { print $4 }')
+          root_gb=$(df -P -B1G / | awk 'NR == 2 { print $4 }')
+          echo "free: /mnt ${avail_gb} GB, / ${root_gb} GB"
+          if [ "$avail_gb" -lt 45 ]; then echo "::error::/mnt has only ${avail_gb} GB free (45 GB needed)"; exit 1; fi
+          if [ "$root_gb" -lt 16 ]; then echo "::error::/ has only ${root_gb} GB free (16 GB needed for the output ISO)"; exit 1; fi
+
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: side-panel/package-lock.json
+
+      - name: Install build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            xorriso squashfs-tools rsync gnupg gpgv curl dpkg-dev gawk shellcheck yamllint \
+            python3-pip python3-yaml jq
+
+      - name: Build .deb packages
+        run: |
+          npm ci --prefix side-panel
+          make debs
+
+      - name: Build ISO
+        run: sudo --preserve-env=ISO_VERSION,SOURCE_DATE_EPOCH bash scripts/build-iso.sh --work-dir "$WORK_DIR" --cache-dir "$CACHE_DIR" --out-dir "$GITHUB_WORKSPACE/dist"
+
+      - name: Show result
+        run: |
+          ls -l dist
+          cat dist/*.sha256
+
+      - name: Upload ISO artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: claudeos-iso
+          path: |
+            dist/*.iso
+            dist/*.iso.sha256
+          compression-level: 0
+          retention-days: 7
+          if-no-files-found: error
+
+  release:
+    name: Publish release
+    needs: build
+    if: startsWith(github.ref, 'refs/tags/v') || inputs.publish
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download ISO artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: claudeos-iso
+          path: dist
+
+      - name: Resolve release tag
+        id: tag
+        env:
+          INPUT_TAG: ${{ inputs.release_tag }}
+          REF_NAME: ${{ github.ref_name }}
+          REF_TYPE: ${{ github.ref_type }}
+          RUN_NUMBER: ${{ github.run_number }}
+        run: |
+          set -euo pipefail
+          if [ "$REF_TYPE" = tag ]; then tag="$REF_NAME"
+          elif [ -n "$INPUT_TAG" ]; then tag="$INPUT_TAG"
+          else tag="v${ISO_VERSION}-build${RUN_NUMBER}"; fi
+          case "$tag" in *[!A-Za-z0-9._-]*) echo "::error::invalid tag '$tag'"; exit 1 ;; esac
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+
+      # GitHub limits each release asset to 2 GiB, the ISO is ~6-7 GiB: publish 1900 MiB (< 1.9 GiB) parts.
+      - name: Split ISO into release-sized parts
+        working-directory: dist
+        run: |
+          set -euo pipefail
+          iso="claudeos-${ISO_VERSION}-amd64.iso"
+          sha256sum -c "$iso.sha256"
+          split --bytes=1900M --suffix-length=2 "$iso" "$iso.part-"
+          sha256sum "$iso" "$iso".part-* > SHA256SUMS
+          cat SHA256SUMS
+          mkdir -p ../joined
+          bash ../scripts/join-iso.sh -o "../joined/$iso" "$iso".part-*
+          rm -rf ../joined
+
+      - name: Write release notes
+        run: |
+          set -euo pipefail
+          iso="claudeos-${ISO_VERSION}-amd64.iso"
+          cat > release-notes.md <<EOF
+          ClaudeOS ${ISO_VERSION} (Ubuntu ${ISO_VERSION} LTS + Claude Code), amd64.
+
+          **The ISO is split into parts** because GitHub release assets are limited to 2 GiB per file.
+          Download every \`${iso}.part-*\` file plus \`SHA256SUMS\`, then join and verify:
+
+          \`\`\`sh
+          cat ${iso}.part-* > ${iso}
+          sha256sum --ignore-missing -c SHA256SUMS
+          \`\`\`
+
+          or, from a checkout of this repository: \`scripts/join-iso.sh /path/to/download-dir\` (joins in order and checks the SHA256).
+          On Windows: \`copy /b ${iso}.part-aa + ${iso}.part-ab + ... ${iso}\`.
+
+          Sign in with your Claude Pro/Max subscription on first boot; no API key is ever needed.
+          Built by CI from Ubuntu's official ISO (SHA256 + GPG verified). This image has not been tested
+          on real hardware by the maintainers; see docs/BUILDING.md for what is and is not verified.
+          EOF
+
+      - name: Create GitHub release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.tag.outputs.tag }}
+          name: ClaudeOS ${{ env.ISO_VERSION }} (${{ steps.tag.outputs.tag }})
+          body_path: release-notes.md
+          prerelease: ${{ contains(steps.tag.outputs.tag, '-') }}
+          fail_on_unmatched_files: true
+          files: |
+            dist/*.iso.part-*
+            dist/SHA256SUMS
