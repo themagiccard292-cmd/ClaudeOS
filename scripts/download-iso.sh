@@ -70,7 +70,7 @@ fetch_ghcr() {
   fi
   token="$(curl -fsS "${token_args[@]}" "https://ghcr.io/token?service=ghcr.io&scope=repository:${image}:pull" | jq -r '.token')" \
     || die "could not get a ghcr.io token (is the package public, or is GH_TOKEN set?)"
-  [ -n "$token" ] && [ "$token" != null ] || die "empty ghcr.io token"
+  if [ -z "$token" ] || [ "$token" = null ]; then die "empty ghcr.io token"; fi
 
   local manifest
   manifest="$(curl -fsS -H "Authorization: Bearer ${token}" \

@@ -26,7 +26,7 @@ ALLOW = [
     "xargs -n1 echo", "dd if=/dev/zero of=./disk.img bs=1M count=10", "whoami", "ssh-add -l",
     "uname -a", "lsblk", "lsusb", "nmcli device status", "flatpak list", "snap list", "snap info firefox",
     "git commit -m 'sudo rm -rf /'", "cat ~/.bashrc", "ls ~/.ssh", "rmdir empty",
-    "bash -c 'echo hi'", "sh -c 'ls /etc'", "env FOO=bar ls", r"find . -type f -exec echo {} \;",
+    "bash -c 'echo hi'", "sh -c 'ls /etc'", "env FOO=bar ls", r"find . -type f -exec echo {} \\;",
 ]
 
 CONFIRM = [
