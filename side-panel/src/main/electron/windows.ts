@@ -89,6 +89,7 @@ export class PanelWindow {
   private width: number;
   private reserveSpace: boolean;
   private quitting = false;
+  private strutWarned = false;
 
   constructor(private readonly opts: PanelWindowOptions) {
     this.width = opts.width;
@@ -221,7 +222,10 @@ export class PanelWindow {
     const rootRight = Math.max(...screen.getAllDisplays().map((d) => d.bounds.x + d.bounds.width));
     const strut = active ? computeStrut(this.win.getBounds(), rootRight, this.display().scaleFactor) : ZERO_STRUT;
     void setStrut(xid, strut).then((ok) => {
-      if (!ok && active) this.opts.log.warn('dock.strut-failed');
+      if (!ok && active && !this.strutWarned) {
+        this.strutWarned = true; // once per run: typically xprop is missing or no X display
+        this.opts.log.warn('dock.strut-failed');
+      }
     });
   }
 }

@@ -95,6 +95,8 @@ export class ClaudeOSApp implements PanelController {
       onGeometryChange: () => this.broadcastPanelState(),
     });
     this.track(this.panel.win.webContents, true);
+    // Let the panel's close handler (which normally just hides) through once the app is really quitting.
+    app.on('before-quit', () => this.panel.markQuitting());
 
     ipcMain.on(PRELOAD_IPC.commandsReady, (event) => {
       const d = this.deliveries.get(event.sender.id);
