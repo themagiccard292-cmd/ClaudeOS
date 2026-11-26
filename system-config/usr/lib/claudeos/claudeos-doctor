@@ -1,0 +1,294 @@
+#!/usr/bin/env python3
+"""claudeos-doctor: check that ClaudeOS computer control is ready.
+
+Usage: claudeos-doctor [--json] [--strict]
+
+Output (--json): {"checks": [{"id","label","status": "ok|warn|fail","detail","fix"}], "ok": bool}
+`ok` is false when any check failed. Exit code is 0 unless --strict is given and a check failed.
+Every subprocess has a timeout and a scrubbed environment; secrets are never printed.
+
+Test overrides: CLAUDEOS_ROOT (prefix for absolute paths), CLAUDEOS_CLAUDE_BIN, PATH,
+YDOTOOL_SOCKET, XDG_RUNTIME_DIR, XDG_SESSION_TYPE, CLAUDEOS_PANEL_APP.
+"""
+
+from __future__ import annotations
+
+import argparse
+import json
+import os
+import shutil
+import socket
+import stat
+import subprocess
+import sys
+from pathlib import Path
+
+STRIPPED_ENV = (
+    "ANTHROPIC_API_KEY",
+    "ANTHROPIC_AUTH_TOKEN",
+    "ANTHROPIC_BASE_URL",
+    "CLAUDE_CODE_USE_BEDROCK",
+    "CLAUDE_CODE_USE_VERTEX",
+    "CLAUDE_CODE_USE_FOUNDRY",
+)
+MIN_NODE_MAJOR = 22
+KEY_SCHEMA = "org.gnome.settings-daemon.plugins.media-keys"
+
+
+def rooted(path: str) -> Path:
+    """Map an absolute system path under CLAUDEOS_ROOT (empty by default)."""
+    return Path(os.environ.get("CLAUDEOS_ROOT", "") + path)
+
+
+def run(cmd: list[str], timeout: float = 10.0) -> tuple[int, str]:
+    """Run a command; return (returncode, stdout). Never raises."""
+    env = {k: v for k, v in os.environ.items() if k not in STRIPPED_ENV}
+    try:
+        proc = subprocess.run(
+            cmd, capture_output=True, text=True, timeout=timeout, env=env, check=False
+        )
+    except (OSError, subprocess.SubprocessError):
+        return 127, ""
+    return proc.returncode, proc.stdout
+
+
+def result(cid: str, label: str, status: str, detail: str, fix: str = "") -> dict:
+    return {"id": cid, "label": label, "status": status, "detail": detail, "fix": fix}
+
+
+def find_claude() -> str | None:
+    override = os.environ.get("CLAUDEOS_CLAUDE_BIN")
+    if override:
+        return override if os.access(override, os.X_OK) else None
+    found = shutil.which("claude")
+    if found:
+        return found
+    for candidate in ("/usr/local/bin/claude", "/usr/bin/claude"):
+        p = rooted(candidate)
+        if p.is_file() and os.access(p, os.X_OK):
+            return str(p)
+    return None
+
+
+def is_exec(path: Path) -> bool:
+    return path.is_file() and os.access(path, os.X_OK)
+
+
+def check_session() -> dict:
+    label = "Desktop session"
+    kind = os.environ.get("XDG_SESSION_TYPE", "")
+    if kind == "wayland":
+        return result("session", label, "ok", "Wayland session")
+    if kind == "x11":
+        return result("session", label, "warn", "X11 session; ClaudeOS expects Wayland (GNOME 50)",
+                      "Log out and choose the default GNOME (Wayland) session")
+    return result("session", label, "warn", "No graphical session detected",
+                  "Run claudeos-doctor from a terminal inside the desktop session")
+
+
+def check_node() -> dict:
+    label = "Node.js"
+    node = shutil.which("node")
+    if not node:
+        return result("node", label, "fail", "node not found",
+                      "sudo apt install nodejs npm  (Node >= 22 is required)")
+    rc, out = run([node, "--version"])
+    ver = out.strip()
+    try:
+        major = int(ver.lstrip("v").split(".")[0])
+    except ValueError:
+        return result("node", label, "warn", f"cannot parse version '{ver}'", "Reinstall nodejs")
+    if rc != 0 or major < MIN_NODE_MAJOR:
+        return result("node", label, "fail", f"{ver} is older than {MIN_NODE_MAJOR}",
+                      "Install Node.js >= 22, then run: sudo /usr/lib/claudeos/install-claude-code.sh")
+    return result("node", label, "ok", ver)
+
+
+def check_claude() -> dict:
+    label = "Claude Code CLI"
+    fix = "sudo /usr/lib/claudeos/install-claude-code.sh"
+    binary = find_claude()
+    if not binary:
+        return result("claude", label, "fail", "claude is not installed", fix)
+    rc, out = run([binary, "--version"], timeout=15)
+    if rc != 0 or not out.strip():
+        return result("claude", label, "fail", f"{binary} --version failed", fix)
+    return result("claude", label, "ok", f"{out.strip().splitlines()[0]} ({binary})")
+
+
+def check_auth() -> dict:
+    label = "Claude sign-in"
+    fix = "Run: claudeos-login"
+    binary = find_claude()
+    if not binary:
+        return result("auth", label, "fail", "claude is not installed", "sudo /usr/lib/claudeos/install-claude-code.sh")
+    rc, out = run([binary, "auth", "status", "--json"], timeout=20)
+    try:
+        data = json.loads(out)
+    except ValueError:
+        return result("auth", label, "warn", "could not read sign-in status", fix)
+    if not isinstance(data, dict):
+        return result("auth", label, "warn", "unexpected sign-in status format", fix)
+    if data.get("loggedIn") is True:
+        method = data.get("authMethod")
+        return result("auth", label, "ok", f"signed in ({method})" if isinstance(method, str) else "signed in")
+    return result("auth", label, "fail", "not signed in", fix)
+
+
+def check_managed() -> dict:
+    label = "Managed Claude Code settings"
+    path = rooted("/etc/claude-code/managed-settings.json")
+    fix = "Reinstall the claudeos-core package"
+    if not path.is_file():
+        return result("managed-settings", label, "fail", f"{path} is missing", fix)
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return result("managed-settings", label, "fail", "file is not valid JSON", fix)
+    if not isinstance(data, dict) or data.get("forceLoginMethod") != "claudeai":
+        return result("managed-settings", label, "fail", "forceLoginMethod is not 'claudeai'", fix)
+    return result("managed-settings", label, "ok", "forceLoginMethod=claudeai")
+
+
+def check_uinput() -> dict:
+    label = "Input device access (/dev/uinput)"
+    path = rooted("/dev/uinput")
+    if not path.exists():
+        return result("uinput", label, "fail", "/dev/uinput does not exist",
+                      "sudo modprobe uinput")
+    if not os.access(path, os.W_OK):
+        return result("uinput", label, "fail", "no write access to /dev/uinput",
+                      "sudo udevadm control --reload && sudo udevadm trigger --name-match=uinput, "
+                      "then log out and in (or: sudo usermod -aG input $USER)")
+    return result("uinput", label, "ok", "writable")
+
+
+def socket_path() -> str:
+    explicit = os.environ.get("YDOTOOL_SOCKET")
+    if explicit:
+        return explicit
+    xrd = os.environ.get("XDG_RUNTIME_DIR")
+    return f"{xrd}/.ydotool_socket" if xrd else "/tmp/.ydotool_socket"
+
+
+def check_ydotoold() -> dict:
+    label = "ydotoold daemon"
+    fix = "systemctl --user enable --now ydotoold.service"
+    path = socket_path()
+    try:
+        mode = os.stat(path).st_mode
+    except OSError:
+        return result("ydotoold", label, "fail", f"socket {path} not found", fix)
+    if not stat.S_ISSOCK(mode):
+        return result("ydotoold", label, "fail", f"{path} is not a socket", fix)
+    probe = socket.socket(socket.AF_UNIX, socket.SOCK_DGRAM)
+    try:
+        probe.settimeout(2)
+        probe.connect(path)
+    except OSError:
+        return result("ydotoold", label, "warn", f"socket {path} exists but nothing answers",
+                      "systemctl --user restart ydotoold.service")
+    finally:
+        probe.close()
+    return result("ydotoold", label, "ok", f"listening on {path}")
+
+
+def check_screenshot() -> dict:
+    label = "Screenshot backend"
+    fix = "sudo apt install gnome-screenshot"
+    if shutil.which("gnome-screenshot") or is_exec(rooted("/usr/bin/gnome-screenshot")):
+        return result("screenshot", label, "ok", "gnome-screenshot")
+    portal = rooted("/usr/libexec/xdg-desktop-portal").exists() or rooted(
+        "/usr/share/xdg-desktop-portal/portals/gnome.portal"
+    ).exists()
+    if portal:
+        return result("screenshot", label, "warn", "only the xdg-desktop-portal Screenshot API is available", fix)
+    if shutil.which("grim"):
+        return result("screenshot", label, "warn", "only grim found (does not work on GNOME)", fix)
+    return result("screenshot", label, "fail", "no screenshot backend found", fix)
+
+
+def check_mcp() -> dict:
+    label = "Computer-control server"
+    fix = "sudo /usr/lib/claudeos/computer-control/setup-venv.sh"
+    launcher = rooted("/usr/bin/claudeos-computer-control-mcp")
+    if not is_exec(launcher):
+        return result("mcp", label, "fail", "claudeos-computer-control-mcp launcher missing",
+                      "Reinstall the claudeos-computer-control package")
+    py = rooted("/opt/claudeos/venv/bin/python")
+    if not is_exec(py):
+        return result("mcp", label, "fail", "virtualenv /opt/claudeos/venv is missing", fix)
+    rc, _ = run([str(py), "-c", "import mcp"], timeout=15)
+    if rc != 0:
+        return result("mcp", label, "fail", "the 'mcp' Python package is not installed in the venv", fix)
+    if not rooted("/etc/claudeos/mcp.json").is_file():
+        return result("mcp", label, "warn", "launcher and venv ok, but /etc/claudeos/mcp.json is missing",
+                      "Reinstall the claudeos-core package")
+    return result("mcp", label, "ok", "launcher, venv and config present")
+
+
+def check_panel() -> dict:
+    label = "Claude side panel"
+    app = Path(os.environ.get("CLAUDEOS_PANEL_APP") or rooted("/opt/claudeos/panel/claudeos-panel-app"))
+    launcher = rooted("/usr/bin/claudeos-panel")
+    fix = "Reinstall the claudeos-side-panel package"
+    if not is_exec(launcher):
+        return result("panel", label, "fail", "claudeos-panel launcher missing", fix)
+    if not is_exec(app):
+        return result("panel", label, "fail", f"{app} missing", fix)
+    return result("panel", label, "ok", "launcher and app present")
+
+
+def parse_gsettings_list(text: str) -> list[str]:
+    return [p for p in text.replace("[", " ").replace("]", " ").replace(",", " ").split() if p]
+
+
+def check_keybinding() -> dict:
+    label = "Super+C shortcut"
+    fix = "sudo dconf update, then log out and in"
+    dbfile = rooted("/etc/dconf/db/claudeos.d/20-claudeos-keybindings")
+    if shutil.which("gsettings"):
+        rc, out = run(["gsettings", "get", KEY_SCHEMA, "custom-keybindings"])
+        if rc == 0:
+            for raw in parse_gsettings_list(out):
+                path = raw.strip("'\"")
+                schema = f"{KEY_SCHEMA}.custom-keybinding:{path}"
+                _, binding = run(["gsettings", "get", schema, "binding"])
+                _, command = run(["gsettings", "get", schema, "command"])
+                if "<Super>c" in binding and "claudeos-panel" in command:
+                    return result("keybinding", label, "ok", "Super+C runs claudeos-panel toggle")
+            return result("keybinding", label, "warn", "Super+C is not bound to the panel in this session", fix)
+    if dbfile.is_file():
+        return result("keybinding", label, "warn",
+                      "defaults are installed but the live setting could not be read", fix)
+    return result("keybinding", label, "fail", "keybinding defaults are not installed",
+                  "Reinstall the claudeos-core package")
+
+
+CHECKS = (
+    check_session, check_node, check_claude, check_auth, check_managed, check_uinput,
+    check_ydotoold, check_screenshot, check_mcp, check_panel, check_keybinding,
+)
+
+
+def main(argv: list[str] | None = None) -> int:
+    ap = argparse.ArgumentParser(prog="claudeos-doctor", description=__doc__.split("\n")[0])
+    ap.add_argument("--json", action="store_true", help="machine-readable output")
+    ap.add_argument("--strict", action="store_true", help="exit 1 if any check fails")
+    args = ap.parse_args(argv)
+
+    checks = [fn() for fn in CHECKS]
+    ok = all(c["status"] != "fail" for c in checks)
+    if args.json:
+        print(json.dumps({"checks": checks, "ok": ok}, indent=2))
+    else:
+        for c in checks:
+            print(f"[{c['status'].upper():4}] {c['label']}: {c['detail']}")
+            if c["status"] != "ok" and c["fix"]:
+                print(f"       fix: {c['fix']}")
+        print("All good." if ok else "Some checks failed.")
+    return 1 if (args.strict and not ok) else 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

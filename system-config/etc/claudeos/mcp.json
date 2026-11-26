@@ -1,0 +1,10 @@
+{
+  "mcpServers": {
+    "claudeos-desktop": {
+      "type": "stdio",
+      "command": "/usr/bin/claudeos-computer-control-mcp",
+      "args": [],
+      "env": {}
+    }
+  }
+}

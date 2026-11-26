@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Name=Claude panel
+Comment=Start the Claude side panel hidden
+Exec=claudeos-panel --background
+Terminal=false
+NoDisplay=true
+OnlyShowIn=GNOME;
+X-GNOME-Autostart-enabled=true
+X-GNOME-Autostart-Delay=2

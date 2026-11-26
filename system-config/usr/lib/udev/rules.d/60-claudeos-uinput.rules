@@ -1,0 +1,3 @@
+# Let the logged-in seat user (uaccess ACL) inject input via /dev/uinput for ydotoold;
+# GROUP=input is the fallback for sessions without a seat.
+KERNEL=="uinput", SUBSYSTEM=="misc", TAG+="uaccess", GROUP="input", MODE="0660", OPTIONS+="static_node=uinput"

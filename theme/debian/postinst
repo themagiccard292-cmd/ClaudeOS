@@ -1,0 +1,13 @@
+#!/bin/sh
+# claudeos-theme postinst: refresh caches. Never fails the install (offline-safe, idempotent).
+set -e
+
+if command -v glib-compile-schemas >/dev/null 2>&1; then
+  glib-compile-schemas /usr/share/glib-2.0/schemas >/dev/null 2>&1 || true
+fi
+
+if command -v gtk-update-icon-cache >/dev/null 2>&1; then
+  gtk-update-icon-cache -f -t /usr/share/icons/hicolor >/dev/null 2>&1 || true
+fi
+
+exit 0

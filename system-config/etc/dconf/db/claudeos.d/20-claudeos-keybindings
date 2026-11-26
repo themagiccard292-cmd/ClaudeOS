@@ -1,0 +1,9 @@
+# Super+C toggles the Claude side panel. GNOME 50 is Wayland-only, so an
+# Electron globalShortcut cannot work; a GNOME custom keybinding can.
+[org/gnome/settings-daemon/plugins/media-keys]
+custom-keybindings=['/org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/claudeos-panel/']
+
+[org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/claudeos-panel]
+name='Toggle Claude panel'
+command='claudeos-panel toggle'
+binding='<Super>c'

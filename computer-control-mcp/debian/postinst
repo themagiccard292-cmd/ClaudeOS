@@ -1,0 +1,14 @@
+#!/bin/sh
+# Try to build the Python venv when online. Never fails the package install (offline installs fall
+# back to the system python3; `claudeos-doctor` reports a missing venv).
+set -e
+
+SETUP=/usr/lib/claudeos/computer-control/setup-venv.sh
+case "$1" in
+    configure)
+        if [ -x "$SETUP" ] && [ ! -x /opt/claudeos/venv/bin/python ]; then
+            "$SETUP" || echo "claudeos-computer-control: could not create /opt/claudeos/venv (offline?); run $SETUP later" >&2
+        fi
+        ;;
+esac
+exit 0

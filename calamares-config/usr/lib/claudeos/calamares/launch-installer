@@ -1,0 +1,33 @@
+#!/usr/bin/env bash
+# Start the Calamares installer from the live session (Wayland: Calamares runs as root on XWayland).
+# Silent no-op unless this is a casper live session carrying /cdrom/casper/filesystem.squashfs.
+#   --force   skip the boot=casper cmdline check only (the squashfs must still exist).
+# Root safety is never bypassed: Calamares is always started through pkexec, never directly.
+# CLAUDEOS_ROOT prefixes /cdrom and /proc paths (tests).
+set -euo pipefail
+
+ROOT="${CLAUDEOS_ROOT:-}"
+force=0
+[ "${1:-}" = "--force" ] && force=1
+
+[ -f "$ROOT/cdrom/casper/filesystem.squashfs" ] || exit 0
+if [ "$force" -eq 0 ] && ! grep -qw 'boot=casper' "$ROOT/proc/cmdline" 2>/dev/null; then
+  exit 0
+fi
+
+if [ "$(id -u)" -eq 0 ]; then
+  echo "launch-installer: refusing to run as root; start it as the live user" >&2
+  exit 1
+fi
+
+command -v xhost >/dev/null 2>&1 && { xhost +si:localuser:root >/dev/null 2>&1 || true; }
+
+args=()
+[ "${CLAUDEOS_INSTALLER_DEBUG:-0}" = "1" ] && args+=(-d)
+
+exec pkexec env \
+  DISPLAY="${DISPLAY:-:0}" \
+  XAUTHORITY="${XAUTHORITY:-$HOME/.Xauthority}" \
+  XDG_RUNTIME_DIR="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}" \
+  QT_QPA_PLATFORM=xcb \
+  calamares "${args[@]}"

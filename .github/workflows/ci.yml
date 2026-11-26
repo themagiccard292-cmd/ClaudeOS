@@ -1,0 +1,92 @@
+name: CI
+
+on:
+  push:
+    branches: ["**"]
+    tags-ignore: ["v*"]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  lint-test:
+    name: Lint + test (node ${{ matrix.node }}, python ${{ matrix.python }})
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        node: ["22"]
+        python: ["3.12"]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+          cache: npm
+          cache-dependency-path: side-panel/package-lock.json
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+
+      - name: Install system tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends shellcheck yamllint jq dpkg-dev xorriso squashfs-tools rsync gawk
+
+      - name: Validate workflow YAML
+        run: |
+          yamllint -c .yamllint .github/workflows
+          python -m pip install --quiet pyyaml
+          python -c 'import glob, yaml; [yaml.safe_load(open(f)) for f in glob.glob(".github/workflows/*.yml")]'
+
+      - name: Install dependencies
+        run: |
+          npm ci --prefix side-panel
+          python -m pip install --quiet ruff pytest pyyaml
+          # Each module's optional one-time setup (venv with its test dependencies).
+          for m in side-panel nautilus-extension computer-control-mcp calamares-config system-config theme iso-builder; do
+            if make -C "$m" -n bootstrap >/dev/null 2>&1; then make -C "$m" bootstrap; fi
+          done
+
+      - name: make lint test
+        run: make lint test
+
+      - name: build-iso.sh --dry-run smoke test
+        run: bash scripts/build-iso.sh --dry-run --work-dir "$RUNNER_TEMP/work" --out-dir "$RUNNER_TEMP/dist" --cache-dir "$RUNNER_TEMP/cache"
+
+  debs:
+    name: Build .deb packages
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: side-panel/package-lock.json
+
+      - name: Install tools
+        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends dpkg-dev
+
+      - name: make debs
+        run: |
+          npm ci --prefix side-panel
+          make debs
+          ls -l iso-builder/out/debs
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: claudeos-debs
+          path: iso-builder/out/debs
+          retention-days: 14
+          if-no-files-found: error

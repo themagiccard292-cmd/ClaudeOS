@@ -1,0 +1,67 @@
+#!/usr/bin/env bash
+# Update the global Claude Code CLI. Usage: claudeos-update [--check] [--version X]
+# Elevation: root runs directly; else sudo on a terminal, pkexec otherwise.
+# Override with CLAUDEOS_ELEVATE=sudo|pkexec|none. Installer: CLAUDEOS_INSTALL_SCRIPT.
+set -euo pipefail
+
+INSTALLER="${CLAUDEOS_INSTALL_SCRIPT:-/usr/lib/claudeos/install-claude-code.sh}"
+VERSION="latest"
+CHECK=0
+while [ $# -gt 0 ]; do
+  case "$1" in
+    --check) CHECK=1 ;;
+    --version) VERSION="${2:?--version needs a value}"; shift ;;
+    -h | --help) echo "Usage: claudeos-update [--check] [--version X]"; exit 0 ;;
+    *) echo "claudeos-update: unknown option '$1'" >&2; exit 2 ;;
+  esac
+  shift
+done
+
+find_claude() {
+  if [ -n "${CLAUDEOS_CLAUDE_BIN:-}" ]; then echo "$CLAUDEOS_CLAUDE_BIN"; return; fi
+  command -v claude 2>/dev/null || {
+    for p in /usr/local/bin/claude /usr/bin/claude; do [ -x "$p" ] && { echo "$p"; return; }; done
+  }
+}
+current() {
+  local bin
+  bin="$(find_claude || true)"
+  if [ -n "$bin" ]; then "$bin" --version 2>/dev/null | head -n1 || echo "unknown"; else echo "not installed"; fi
+}
+
+before="$(current)"
+echo "Claude Code before: ${before}"
+
+if [ "$CHECK" -eq 1 ]; then
+  latest="$(npm view @anthropic-ai/claude-code version 2>/dev/null || true)"
+  echo "Latest available:   ${latest:-unknown (offline?)}"
+  exit 0
+fi
+
+# Environment that must survive sudo/pkexec: proxies and the requested version.
+pass=("CLAUDE_CODE_VERSION=${VERSION}")
+for v in HTTPS_PROXY https_proxy HTTP_PROXY http_proxy NO_PROXY no_proxy \
+  npm_config_proxy npm_config_https_proxy npm_config_registry CLAUDEOS_NPM_PREFIX; do
+  [ -n "${!v:-}" ] && pass+=("${v}=${!v}")
+done
+
+mode="${CLAUDEOS_ELEVATE:-auto}"
+if [ "$mode" = auto ]; then
+  if [ "$(id -u)" -eq 0 ]; then mode=none
+  elif [ -t 0 ] && command -v sudo >/dev/null 2>&1; then mode=sudo
+  elif command -v pkexec >/dev/null 2>&1; then mode=pkexec
+  else echo "claudeos-update: need root; install sudo or pkexec" >&2; exit 1
+  fi
+fi
+
+echo "Updating (administrator approval may be requested) ..."
+case "$mode" in
+  none) env "${pass[@]}" "$INSTALLER" ;;
+  sudo) sudo env "${pass[@]}" "$INSTALLER" ;;
+  pkexec) pkexec env "${pass[@]}" "$INSTALLER" ;;
+  *) echo "claudeos-update: bad CLAUDEOS_ELEVATE '$mode'" >&2; exit 2 ;;
+esac
+
+after="$(current)"
+echo "Claude Code after:  ${after}"
+if [ "$before" = "$after" ]; then echo "Already up to date."; else echo "Updated."; fi

@@ -1,0 +1,16 @@
+claudeos-desktop
+================
+
+This meta package pulls in every ClaudeOS component:
+
+  claudeos-core              OS prompt, Claude Code managed settings, first boot, doctor
+  claudeos-side-panel        the docked Claude panel and the claudeos-panel launcher
+  claudeos-computer-control  the claudeos-desktop MCP server (screen, input, windows, files)
+  claudeos-nautilus          the "Ask Claude" Nautilus action
+  claudeos-calamares         installer configuration and branding
+  claudeos-theme             wallpapers, GTK theme and GNOME defaults
+
+ClaudeOS never uses API keys: sign in with your Claude Pro or Max subscription
+(claude auth login --claudeai, or the panel's onboarding wizard).
+
+Source and documentation: see the ClaudeOS repository (README.md, docs/).

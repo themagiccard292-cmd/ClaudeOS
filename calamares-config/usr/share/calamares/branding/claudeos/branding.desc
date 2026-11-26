@@ -1,0 +1,42 @@
+# ClaudeOS Calamares branding. Palette per docs/ARCHITECTURE.md C8 (dark surface, terracotta accent).
+---
+componentName: claudeos
+
+welcomeStyleCalamares: true
+welcomeExpandingLogo: true
+
+windowExpanding: normal
+windowSize: 900px,560px
+windowPlacement: center
+
+sidebar: widget
+navigation: widget
+
+# These strings feed the partition page text ("Erase disk ... and install ClaudeOS").
+strings:
+  productName: ClaudeOS
+  shortProductName: ClaudeOS
+  version: 26.04.1
+  shortVersion: 26.04.1
+  versionedName: ClaudeOS 26.04.1
+  shortVersionedName: ClaudeOS 26.04.1
+  bootloaderEntryName: ClaudeOS
+  productUrl: https://github.com/themagiccard292-cmd/ClaudeOS
+  supportUrl: https://github.com/themagiccard292-cmd/ClaudeOS/issues
+  knownIssuesUrl: https://github.com/themagiccard292-cmd/ClaudeOS/issues
+  releaseNotesUrl: https://github.com/themagiccard292-cmd/ClaudeOS/releases
+
+images:
+  productLogo: "logo.png"
+  productIcon: "icon.png"
+  productWelcome: "welcome.png"
+
+# Calamares 3.3 style keys (the pre-3.2 sidebarText* names are rejected with a warning).
+style:
+  SidebarBackground: "#262624"
+  SidebarText: "#F5F4EF"
+  SidebarTextCurrent: "#D97757"
+  SidebarBackgroundCurrent: "#383835"
+
+slideshow: "show.qml"
+slideshowAPI: 2

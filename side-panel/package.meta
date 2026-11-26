@@ -1,0 +1,6 @@
+PKG_NAME="claudeos-side-panel"
+PKG_DESCRIPTION="ClaudeOS docked Claude side panel (Electron) with the claudeos-panel launcher"
+PKG_DEPENDS="libgtk-3-0t64, libnss3, libxss1, libasound2t64, xdg-utils, python3, x11-utils"
+PKG_RECOMMENDS="claudeos-theme"
+PKG_ARCH="amd64"
+PKG_SECTION="utils"

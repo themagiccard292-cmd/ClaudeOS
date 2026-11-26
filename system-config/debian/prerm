@@ -1,0 +1,17 @@
+#!/bin/sh
+# claudeos-core prerm: undo integration while our files still exist. Always exits 0.
+set -u
+
+case "${1:-}" in
+  remove | deconfigure)
+    if [ -x /usr/lib/claudeos/apply-branding.sh ]; then
+      /usr/lib/claudeos/apply-branding.sh --revert || true
+    fi
+    if command -v systemctl >/dev/null 2>&1; then
+      systemctl --global disable ydotoold.service >/dev/null 2>&1 || true
+      systemctl --global unmask ydotool.service >/dev/null 2>&1 || true
+    fi
+    ;;
+esac
+
+exit 0

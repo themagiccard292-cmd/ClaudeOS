@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Name=ClaudeOS first-run setup
+Comment=Open the welcome and sign-in wizard on first login
+Exec=/usr/lib/claudeos/claudeos-firstboot
+Terminal=false
+NoDisplay=true
+OnlyShowIn=GNOME;
+X-GNOME-Autostart-enabled=true
+X-GNOME-Autostart-Delay=5

@@ -1,0 +1,23 @@
+[project]
+name = "claudeos-computer-control"
+version = "26.04.1"
+description = "claudeos-desktop MCP server: screen, input, files and system control for ClaudeOS with a fail-closed safety classifier"
+requires-python = ">=3.12"
+dependencies = ["mcp>=1.12,<2", "pillow>=10"]
+
+[project.optional-dependencies]
+dev = ["pytest>=8", "ruff"]
+
+[project.scripts]
+claudeos-computer-control-mcp = "claudeos_mcp.server:main"
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]

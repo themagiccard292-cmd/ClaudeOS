@@ -1,0 +1,113 @@
+#!/usr/bin/env bash
+# theme-apply - install the ClaudeOS GTK colour overrides into an existing user's config.
+#
+# New users get the files from /etc/skel; this is for users that already existed when
+# claudeos-theme was installed or upgraded (it is safe to run at every login, e.g. from
+# claudeos-session-init).  Only changes are printed.
+#
+# Each shipped gtk.css starts with a marker line "/* claudeos-theme:managed sha256=H */"
+# where H is the sha256 of the rest of the file.  For every target file:
+#   missing                         -> install
+#   identical                       -> nothing
+#   marker present and hash valid   -> pristine older ClaudeOS file, replaced in place
+#   anything else (user's own file, or a ClaudeOS file the user edited)
+#                                   -> backed up to <file>.claudeos-bak-<timestamp>, then
+#                                      replaced (or left alone with --no-clobber)
+#
+# Usage: theme-apply [--dry-run] [--no-clobber] [--verbose]
+# Environment: CLAUDEOS_THEME_DIR (default /usr/share/claudeos/theme), XDG_CONFIG_HOME.
+set -euo pipefail
+
+src_dir="${CLAUDEOS_THEME_DIR:-/usr/share/claudeos/theme}"
+config_home="${XDG_CONFIG_HOME:-${HOME:?HOME is not set}/.config}"
+dry_run=0
+no_clobber=0
+verbose=0
+
+usage() {
+  sed -n '2,/^set -e/p' "$0" | sed '$d' | sed 's/^# \{0,1\}//'
+}
+
+while [ $# -gt 0 ]; do
+  case "$1" in
+    --dry-run) dry_run=1 ;;
+    --no-clobber) no_clobber=1 ;;
+    -v | --verbose) verbose=1 ;;
+    -h | --help) usage; exit 0 ;;
+    *) echo "theme-apply: unknown option: $1" >&2; exit 2 ;;
+  esac
+  shift
+done
+
+say() { printf '%s\n' "$*"; }
+chatty() { if [ "$verbose" -eq 1 ]; then say "$*"; fi; }
+
+# True when $1 starts with a valid marker (hash matches the remaining lines).
+is_pristine() {
+  local file="$1" first want got
+  [ -f "$file" ] || return 1
+  first="$(head -n 1 "$file")"
+  [[ "$first" =~ ^/\*\ claudeos-theme:managed\ sha256=([0-9a-f]{64})\ \*/$ ]] || return 1
+  want="${BASH_REMATCH[1]}"
+  got="$(tail -n +2 "$file" | sha256sum | cut -d' ' -f1)"
+  [ "$want" = "$got" ]
+}
+
+backup_path() {
+  local base candidate n=0
+  base="$1.claudeos-bak-$(date +%Y%m%d%H%M%S)"
+  candidate="$base"
+  while [ -e "$candidate" ] || [ -L "$candidate" ]; do
+    n=$((n + 1))
+    candidate="$base.$n"
+  done
+  printf '%s' "$candidate"
+}
+
+install_file() {
+  local src="$1" dest="$2" tmp
+  mkdir -p "$(dirname "$dest")"
+  tmp="$(mktemp "$dest.XXXXXX")"
+  cat "$src" > "$tmp"
+  chmod 0644 "$tmp"
+  mv -f "$tmp" "$dest"
+}
+
+apply_one() {
+  local src="$1" dest="$2" bak
+  if [ ! -e "$dest" ] && [ ! -L "$dest" ]; then
+    say "install $dest"
+    [ "$dry_run" -eq 1 ] || install_file "$src" "$dest"
+  elif [ -f "$dest" ] && [ ! -L "$dest" ] && cmp -s "$src" "$dest"; then
+    chatty "unchanged $dest"
+  elif [ -f "$dest" ] && [ ! -L "$dest" ] && is_pristine "$dest"; then
+    say "update $dest"
+    [ "$dry_run" -eq 1 ] || install_file "$src" "$dest"
+  elif [ "$no_clobber" -eq 1 ]; then
+    say "skip $dest (modified by user; --no-clobber)"
+  elif [ -d "$dest" ]; then
+    say "skip $dest (is a directory)"
+  else
+    bak="$(backup_path "$dest")"
+    say "backup $dest -> $bak"
+    say "update $dest"
+    if [ "$dry_run" -eq 0 ]; then
+      mv -- "$dest" "$bak"
+      install_file "$src" "$dest"
+    fi
+  fi
+}
+
+found=0
+for v in 3.0 4.0; do
+  src="$src_dir/gtk-$v/gtk.css"
+  if [ -f "$src" ]; then
+    found=1
+    apply_one "$src" "$config_home/gtk-$v/gtk.css"
+  fi
+done
+
+if [ "$found" -eq 0 ]; then
+  echo "theme-apply: no theme files under $src_dir" >&2
+  exit 1
+fi

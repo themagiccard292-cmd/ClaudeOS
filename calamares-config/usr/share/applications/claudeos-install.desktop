@@ -1,0 +1,11 @@
+[Desktop Entry]
+Type=Application
+Name=Install ClaudeOS
+GenericName=System Installer
+Comment=Install ClaudeOS on this computer
+Exec=/usr/lib/claudeos/calamares/launch-installer --force
+Icon=claudeos-installer
+Terminal=false
+StartupNotify=true
+Categories=System;
+Keywords=installer;install;claudeos;

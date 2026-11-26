@@ -1,0 +1,20 @@
+# Subset of ubuntu-settings 26.04.6 (/usr/share/glib-2.0/schemas/10_ubuntu-settings.gschema.override)
+[org.gnome.shell]
+favorite-apps = [ 'ubuntu-desktop-bootstrap_ubuntu-desktop-bootstrap.desktop', 'firefox_firefox.desktop' ]
+
+[org.gnome.desktop.interface]
+monospace-font-name = "Ubuntu Sans Mono 11"
+accent-color = 'orange'
+
+[org.gnome.shell:ubuntu]
+favorite-apps = [ 'ubuntu-desktop-bootstrap_ubuntu-desktop-bootstrap.desktop', 'firefox_firefox.desktop', 'thunderbird_thunderbird.desktop' ]
+
+[org.gnome.desktop.background:ubuntu]
+picture-uri = 'file:///usr/share/backgrounds/warty-final-ubuntu.png'
+picture-uri-dark = 'file:///usr/share/backgrounds/ubuntu-wallpaper-d.png'
+
+[org.gnome.desktop.screensaver:ubuntu]
+picture-uri = 'file:///usr/share/backgrounds/warty-final-ubuntu.png'
+
+[org.gnome.desktop.interface:ubuntu]
+monospace-font-name = "Ubuntu Sans Mono 11"
