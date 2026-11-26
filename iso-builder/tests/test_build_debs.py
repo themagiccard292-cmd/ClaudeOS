@@ -76,3 +76,33 @@ def test_real_modules_build(tmp_path):
     dep = next(ln for ln in ctrl.splitlines() if ln.startswith("Depends:"))
     assert "calamares" not in dep and "claudeos-calamares" in ctrl, "calamares must not be a hard dependency (installer purge would remove the meta)"
     assert "Recommends:" in ctrl and "calamares" in ctrl
+
+
+def test_file_conflict_checker_flags_duplicate_ownership(tmp_path):
+    import subprocess
+    import sys
+
+    def make_deb(name: str, files: dict[str, str]) -> None:
+        root = tmp_path / f"{name}-root"
+        for rel, content in files.items():
+            f = root / rel
+            f.parent.mkdir(parents=True, exist_ok=True)
+            f.write_text(content)
+        (root / "DEBIAN").mkdir()
+        (root / "DEBIAN/control").write_text(
+            f"Package: {name}\nVersion: 1\nArchitecture: all\nMaintainer: t <t@example.org>\nDescription: t\n"
+        )
+        out = tmp_path / "debs"
+        out.mkdir(exist_ok=True)
+        subprocess.run(["dpkg-deb", "--build", "--root-owner-group", str(root), str(out / f"{name}_1_all.deb")],
+                       check=True, capture_output=True)
+
+    script = ISO_BUILDER / "lib" / "check_file_conflicts.py"
+    make_deb("pkg-a", {"usr/share/x/a.txt": "a", "usr/share/x/shared.svg": "1"})
+    make_deb("pkg-b", {"usr/share/x/b.txt": "b"})
+    ok = subprocess.run([sys.executable, str(script), str(tmp_path / "debs")], capture_output=True, text=True)
+    assert ok.returncode == 0, ok.stderr
+    make_deb("pkg-c", {"usr/share/x/shared.svg": "2"})
+    bad = subprocess.run([sys.executable, str(script), str(tmp_path / "debs")], capture_output=True, text=True)
+    assert bad.returncode == 1
+    assert "/usr/share/x/shared.svg" in bad.stderr and "pkg-a" in bad.stderr and "pkg-c" in bad.stderr

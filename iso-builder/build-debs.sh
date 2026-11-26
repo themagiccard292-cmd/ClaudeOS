@@ -160,6 +160,7 @@ main() {
     build_module "$META_MODULE" "$joined" "$joined_soft"
   fi
   ((${#BUILT[@]})) || die "nothing was built (check --only / package.meta files)"
+  python3 "$ISO_BUILDER_DIR/lib/check_file_conflicts.py" "$OUT" || die "two packages ship the same file (dpkg would refuse to install them together)"
   bash "$ISO_BUILDER_DIR/lib/repo-index.sh" "$OUT"
   log_info "built ${#BUILT[@]} package(s) into $OUT"
 }

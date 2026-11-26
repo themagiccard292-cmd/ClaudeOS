@@ -23,9 +23,9 @@ install:
 	install -d $(DESTDIR)$(PREFIX)/lib/claudeos/calamares $(DESTDIR)$(PREFIX)/share/applications
 	install -m 0755 usr/lib/claudeos/calamares/postinstall.sh usr/lib/claudeos/calamares/launch-installer $(DESTDIR)$(PREFIX)/lib/claudeos/calamares/
 	install -m 0644 usr/share/applications/claudeos-install.desktop $(DESTDIR)$(PREFIX)/share/applications/
-	install -d $(DESTDIR)$(PREFIX)/share/calamares/branding/claudeos $(DESTDIR)$(PREFIX)/share/icons/hicolor/scalable/apps
+	install -d $(DESTDIR)$(PREFIX)/share/calamares/branding/claudeos
 	install -m 0644 usr/share/calamares/branding/claudeos/* $(DESTDIR)$(PREFIX)/share/calamares/branding/claudeos/
-	install -m 0644 usr/share/icons/hicolor/scalable/apps/claudeos-installer.svg $(DESTDIR)$(PREFIX)/share/icons/hicolor/scalable/apps/
+	# The claudeos-installer icon is shipped by claudeos-theme (two packages must not own one file).
 
 clean:
 	rm -rf .pytest_cache .ruff_cache tests/__pycache__

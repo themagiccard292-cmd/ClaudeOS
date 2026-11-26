@@ -1,6 +1,6 @@
 PKG_NAME="claudeos-calamares"
 PKG_DESCRIPTION="ClaudeOS Calamares installer configuration, branding and live-session launcher"
 PKG_DEPENDS="calamares, x11-xserver-utils, pkexec | policykit-1, rsync, squashfs-tools, qml6-module-qtquick"
-PKG_RECOMMENDS="efibootmgr, grub-efi-amd64-signed, shim-signed, grub-pc-bin, dosfstools, e2fsprogs"
+PKG_RECOMMENDS="claudeos-theme, efibootmgr, grub-efi-amd64-signed, shim-signed, grub-pc-bin, dosfstools, e2fsprogs"
 PKG_ARCH="all"
 PKG_SECTION="admin"

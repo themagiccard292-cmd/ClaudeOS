@@ -209,7 +209,9 @@ def test_desktop_files():
     assert a["OnlyShowIn"] == "GNOME;" and a["X-GNOME-Autostart-Delay"] == "3"
     i = parse_desktop(ROOT / "usr/share/applications/claudeos-install.desktop")
     assert i["Name"] == "Install ClaudeOS" and i["Exec"].endswith("launch-installer --force")
-    assert (ROOT / "usr/share/icons/hicolor/scalable/apps" / f"{i['Icon']}.svg").exists()
+    # Icons are owned by the theme package; this package must not ship its own copy (dpkg file conflict).
+    assert (ROOT.parent / "theme/usr/share/icons/hicolor/scalable/apps" / f"{i['Icon']}.svg").exists()
+    assert not (ROOT / "usr/share/icons").exists()
 
 
 def test_shellcheck_and_exec_bits():
